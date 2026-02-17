@@ -92,20 +92,19 @@ jobs:
           export ANDROID_ROOT=/mnt/build/hadk_17.1
           
           # Clone device-specific repos for raphael (Mi 9T Pro / SM8150)
-          git clone https://github.com/Andrew21P/device_xiaomi_raphael.git $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || \
-            git clone https://github.com/LineageOS/android_device_xiaomi_raphael.git -b lineage-17.1 $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || true
+          # crDroid has Android 10 support (10.0 branch)
+          git clone https://github.com/crdroidandroid/android_device_xiaomi_raphael.git -b 10.0 $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || \
+            git clone https://github.com/PixelExperience-Devices/device_xiaomi_raphael.git $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || true
           
-          # SM8150 common device tree
-          git clone https://github.com/Andrew21P/device_xiaomi_sm8150-common.git $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 || \
-            git clone https://github.com/LineageOS/android_device_xiaomi_sm8150-common.git -b lineage-17.1 $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 || true
+          # SM8150 common device tree from crDroid
+          git clone https://github.com/crdroidandroid/android_device_xiaomi_sm8150-common.git -b 10.0 $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 || true
           
-          # Kernel - SM8150 (Snapdragon 855)
-          git clone https://github.com/Andrew21P/kernel_xiaomi_sm8150.git $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 -b q-oss || \
-            git clone https://github.com/LineageOS/android_kernel_xiaomi_sm8150.git -b lineage-17.1 $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 || true
+          # Kernel - SM8150 (Snapdragon 855) from crDroid
+          git clone https://github.com/crdroidandroid/android_kernel_xiaomi_sm8150.git -b 10.0 $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 || \
+            git clone https://github.com/PixelExperience-Devices/kernel_xiaomi_sm8150.git $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 || true
           
-          # Vendor blobs
-          git clone https://github.com/Andrew21P/vendor_xiaomi_raphael.git $ANDROID_ROOT/vendor/xiaomi/raphael --depth=1 || \
-            git clone https://github.com/TheMuppets/proprietary_vendor_xiaomi.git $ANDROID_ROOT/vendor/xiaomi --depth=1 || true
+          # Vendor blobs from TheMuppets
+          git clone https://github.com/TheMuppets/proprietary_vendor_xiaomi.git -b lineage-17.1 $ANDROID_ROOT/vendor/xiaomi --depth=1 || true
           
           # Hybris boot with fixup-mountpoints for raphael
           rm -rf $ANDROID_ROOT/hybris/hybris-boot
@@ -116,7 +115,8 @@ jobs:
           cp ${{ github.workspace }}/fixup-mountpoints $ANDROID_ROOT/hybris/hybris-boot/
           
           # Hardware xiaomi
-          git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-17.1 $ANDROID_ROOT/hardware/xiaomi --depth=1 --single-branch || true
+          git clone https://github.com/crdroidandroid/android_hardware_xiaomi.git -b 10.0 $ANDROID_ROOT/hardware/xiaomi --depth=1 || \
+            git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-17.1 $ANDROID_ROOT/hardware/xiaomi --depth=1 || true
 
           # Fix missing metalava directory
           mkdir -p $ANDROID_ROOT/tools/metalava/manual
@@ -124,7 +124,15 @@ jobs:
           # Build
           cd $ANDROID_ROOT
           source build/envsetup.sh
-          breakfast raphael || lunch lineage_raphael-userdebug || true
+          
+          # Try different lunch targets
+          breakfast raphael userdebug || \
+            lunch aosp_raphael-userdebug || \
+            lunch lineage_raphael-userdebug || true
+          
+          # Check if device tree was found
+          ls -la $ANDROID_ROOT/device/xiaomi/raphael/ || echo "WARNING: Device tree not found!"
+          
           make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot hybris-recovery
 
       - name: Upload HAL Artifacts
