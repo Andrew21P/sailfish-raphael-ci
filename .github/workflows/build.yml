@@ -1,0 +1,185 @@
+#=================================================
+# Description: Build SailfishOS for Xiaomi Mi 9T Pro (raphael)
+# Based on: sailfish-on-davinci/ci
+# Author: Adapted for raphael
+#=================================================
+
+name: Build SailfishOS for Raphael
+
+on: 
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'trigger to build'
+        required: true
+        default: 'run'
+
+permissions:
+  contents: write
+
+env:
+  DEVICE: raphael
+  VENDOR: xiaomi
+  ANDROID_ROOT: /home/runner/work/ci/ci/hadk_16.0
+  SAILFISH_SDK_VERSION: 5.0.0.43
+  SAILFISH_OS_VERSION: 5.0.0.71
+
+jobs:
+  # 1. Sync source code
+  prep-source:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 20480
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-docker-images: 'true'
+          
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Repo Tool & Source
+        id: cache-android
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/bin/repo
+            ${{ env.ANDROID_ROOT }}/.repo
+          key: ${{ runner.os }}-android-repo-raphael-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-android-repo-raphael-
+
+      - name: Download repo bin
+        run: |
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          git config --global user.email "ci@github.com"
+          git config --global user.name "Github Actions"
+
+      - name: Repo Sync
+        run: |
+          mkdir -p $ANDROID_ROOT
+          cd $ANDROID_ROOT
+          python3 ~/bin/repo init -u https://github.com/mer-hybris/android.git -b hybris-16.0 --depth=1
+          python3 ~/bin/repo sync -j$(nproc --all) -c --no-clone-bundle --no-tags --optimized-fetch --prune
+
+  # 2. Build HAL
+  build-hal:
+    needs: prep-source
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 30720
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-docker-images: 'true'
+          
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore Repo Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/bin/repo
+            ${{ env.ANDROID_ROOT }}/.repo
+          key: ${{ runner.os }}-android-repo-raphael-${{ github.sha }}
+
+      - name: Prepare Environment & Build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            openjdk-8-jdk android-tools-adb bc bison \
+            build-essential curl flex g++-multilib gcc-multilib gnupg gperf \
+            imagemagick lib32ncurses-dev \
+            lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev \
+            libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc yasm zip zlib1g-dev \
+            qemu-user-static qemu-system-arm e2fsprogs simg2img \
+            libtinfo5 libncurses5 gzip virtualenv git python2
+
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          git config --global user.email "ci@github.com"
+          git config --global user.name "Github Actions"
+
+          # Restore workspace from .repo
+          cd $ANDROID_ROOT
+          python3 ~/bin/repo sync -l
+          
+          # Clone device-specific repos for raphael (Mi 9T Pro / SM8150)
+          # TODO: Replace with your forked repos once you upload them
+          git clone https://github.com/nicknisi/device_xiaomi_raphael.git $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || \
+            git clone https://github.com/LineageOS/android_device_xiaomi_raphael.git -b lineage-16.0 $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || true
+          
+          # SM8150 common device tree
+          git clone https://github.com/nicknisi/device_xiaomi_sm8150-common.git $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 || \
+            git clone https://github.com/LineageOS/android_device_xiaomi_sm8150-common.git -b lineage-16.0 $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 || true
+          
+          # Kernel - SM8150 (Snapdragon 855)
+          git clone https://github.com/nicknisi/kernel_xiaomi_sm8150.git $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 -b q-oss || \
+            git clone https://github.com/LineageOS/android_kernel_xiaomi_sm8150.git -b lineage-16.0 $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 || true
+          
+          # Vendor blobs
+          git clone https://github.com/nicknisi/vendor_xiaomi_raphael.git $ANDROID_ROOT/vendor/xiaomi/raphael --depth=1 || \
+            git clone https://github.com/TheMuppets/proprietary_vendor_xiaomi.git $ANDROID_ROOT/vendor/xiaomi --depth=1 || true
+          
+          # Hybris boot with fixup-mountpoints for raphael
+          rm -rf $ANDROID_ROOT/hybris/hybris-boot
+          git clone https://github.com/nicknisi/hybris-boot.git $ANDROID_ROOT/hybris/hybris-boot --depth=1 || \
+            git clone https://github.com/mer-hybris/hybris-boot.git -b master $ANDROID_ROOT/hybris/hybris-boot --depth=1
+          
+          # Copy our fixup-mountpoints with raphael support
+          cp ${{ github.workspace }}/fixup-mountpoints $ANDROID_ROOT/hybris/hybris-boot/
+          
+          # Hardware xiaomi
+          git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-18.1 $ANDROID_ROOT/hardware/xiaomi --depth=1 --single-branch
+
+          cd ${{ github.workspace }}
+          sudo ln -sf /usr/bin/python2.7 /usr/bin/python
+          chmod +x build-hal.sh
+          bash build-hal.sh
+
+      - name: Upload HAL Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hal-output
+          path: |
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/hybris-boot.img
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/hybris-recovery.img
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/system.img
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/vendor.img
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/*.prop
