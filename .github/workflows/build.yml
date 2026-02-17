@@ -1,16 +1,13 @@
 #=================================================
-# Description: Build SailfishOS for Xiaomi Mi 9T Pro (raphael)
-# Based on: sailfish-on-davinci/ci
-# HAL already built - only rootfs build
+# SailfishOS for Xiaomi Mi 9T Pro (raphael)
+# Simple package job - reuses HAL from run 22110403799
 #=================================================
 
 name: Build SailfishOS for Raphael
 
 on: 
   push:
-    branches:
-      - master
-      - main
+    branches: [master, main]
   workflow_dispatch:
 
 permissions:
@@ -18,21 +15,16 @@ permissions:
 
 env:
   DEVICE: raphael
-  VENDOR: xiaomi
-  SAILFISH_SDK_VERSION: 5.0.0.43
-  SAILFISH_OS_VERSION: 5.0.0.43
-  PORT_ARCH: aarch64
   HAL_RUN_ID: '22110403799'
 
 jobs:
-  # Build Sailfish rootfs - uses pre-built HAL artifacts
-  build-rootfs:
+  package:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download HAL artifacts from previous run
+      - name: Download HAL artifacts
         uses: actions/download-artifact@v4
         with:
           name: hal-output
@@ -41,588 +33,93 @@ jobs:
           repository: ${{ github.repository }}
           run-id: ${{ env.HAL_RUN_ID }}
 
-      - name: Build DHD RPMs in Sailfish SDK container
+      - name: Create flashable package
         run: |
-          # Create work directory structure like davinci CI
-          export ANDROID_ROOT=~/work/hadk_17.1
-          mkdir -p $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}
+          mkdir -p sailfish-${{ env.DEVICE }}
           
-          # Copy HAL artifacts to proper location
-          cp -r hal-output/* $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}/ || true
-          
-          # Clone required Android system headers for DHD build
-          git clone https://github.com/AsteroidOS/android_system_core.git -b hybris-17.1 $ANDROID_ROOT/system/core --depth=1 || \
-            git clone https://github.com/AsteroidOS/android_system_core.git $ANDROID_ROOT/system/core --depth=1 || \
-            git clone https://android.googlesource.com/platform/system/core -b android-10.0.0_r1 $ANDROID_ROOT/system/core --depth=1
-          git clone https://android.googlesource.com/platform/system/libbase -b android-10.0.0_r1 $ANDROID_ROOT/system/libbase --depth=1 || true
-          
-          # Create the private header directory and generated config
-          mkdir -p $ANDROID_ROOT/system/core/include/private
-          cat > $ANDROID_ROOT/system/core/include/private/android_filesystem_config.h << 'FSCONFIG'
-          #pragma once
-          #include <sys/types.h>
-          #define AID_ROOT 0
-          #define AID_SYSTEM 1000
-          #define AID_RADIO 1001
-          #define AID_BLUETOOTH 1002
-          #define AID_GRAPHICS 1003
-          #define AID_INPUT 1004
-          #define AID_AUDIO 1005
-          #define AID_CAMERA 1006
-          #define AID_LOG 1007
-          #define AID_COMPASS 1008
-          #define AID_MOUNT 1009
-          #define AID_WIFI 1010
-          #define AID_ADB 1011
-          #define AID_INSTALL 1012
-          #define AID_MEDIA 1013
-          #define AID_DHCP 1014
-          #define AID_SDCARD_RW 1015
-          #define AID_VPN 1016
-          #define AID_KEYSTORE 1017
-          #define AID_USB 1018
-          #define AID_DRM 1019
-          #define AID_MDNSR 1020
-          #define AID_GPS 1021
-          #define AID_MEDIA_RW 1023
-          #define AID_MTP 1024
-          #define AID_NFC 1027
-          #define AID_SDCARD_R 1028
-          #define AID_CLAT 1029
-          #define AID_LOOP_RADIO 1030
-          #define AID_MEDIA_DRM 1031
-          #define AID_PACKAGE_INFO 1032
-          #define AID_SDCARD_PICS 1033
-          #define AID_SDCARD_AV 1034
-          #define AID_SDCARD_ALL 1035
-          #define AID_LOGD 1036
-          #define AID_SHARED_RELRO 1037
-          #define AID_DBUS 1038
-          #define AID_TLSDATE 1039
-          #define AID_MEDIA_EX 1040
-          #define AID_AUDIOSERVER 1041
-          #define AID_METRICS_COLL 1042
-          #define AID_METRICSD 1043
-          #define AID_WEBSERV 1044
-          #define AID_DEBUGGERD 1045
-          #define AID_MEDIA_CODEC 1046
-          #define AID_CAMERASERVER 1047
-          #define AID_FIREWALL 1048
-          #define AID_TRUNKS 1049
-          #define AID_NVRAM 1050
-          #define AID_DNS 1051
-          #define AID_DNS_TETHER 1052
-          #define AID_WEBVIEW_ZYGOTE 1053
-          #define AID_VEHICLE_NETWORK 1054
-          #define AID_MEDIA_AUDIO 1055
-          #define AID_MEDIA_VIDEO 1056
-          #define AID_MEDIA_IMAGE 1057
-          #define AID_TOMBSTONED 1058
-          #define AID_MEDIA_OBB 1059
-          #define AID_ESE 1060
-          #define AID_OTA_UPDATE 1061
-          #define AID_AUTOMOTIVE_EVS 1062
-          #define AID_LOWPAN 1063
-          #define AID_HSM 1064
-          #define AID_RESERVED_DISK 1065
-          #define AID_STATSD 1066
-          #define AID_INCIDENTD 1067
-          #define AID_SECURE_ELEMENT 1068
-          #define AID_LMKD 1069
-          #define AID_LLKD 1070
-          #define AID_IORAPD 1071
-          #define AID_GPU_SERVICE 1072
-          #define AID_NETWORK_STACK 1073
-          #define AID_SHELL 2000
-          #define AID_CACHE 2001
-          #define AID_DIAG 2002
-          #define AID_NET_BT_ADMIN 3001
-          #define AID_NET_BT 3002
-          #define AID_INET 3003
-          #define AID_NET_RAW 3004
-          #define AID_NET_ADMIN 3005
-          #define AID_NET_BW_STATS 3006
-          #define AID_NET_BW_ACCT 3007
-          #define AID_READPROC 3009
-          #define AID_WAKELOCK 3010
-          #define AID_UHID 3011
-          #define AID_EVERYBODY 9997
-          #define AID_MISC 9998
-          #define AID_NOBODY 9999
-          #define AID_APP 10000
-          #define AID_APP_START 10000
-          #define AID_APP_END 19999
-          #define AID_CACHE_GID_START 20000
-          #define AID_CACHE_GID_END 29999
-          #define AID_EXT_GID_START 30000
-          #define AID_EXT_GID_END 39999
-          #define AID_EXT_CACHE_GID_START 40000
-          #define AID_EXT_CACHE_GID_END 49999
-          #define AID_SHARED_GID_START 50000
-          #define AID_SHARED_GID_END 59999
-          #define AID_ISOLATED_START 99000
-          #define AID_ISOLATED_END 99999
-          #define AID_USER 100000
-          #define AID_USER_OFFSET 100000
-          FSCONFIG
-          
-          # Create generated config header
-          cat > $ANDROID_ROOT/generated_android_filesystem_config.h << 'GENCONFIG'
-          #include <private/android_filesystem_config.h>
-          GENCONFIG
-          
-          # Clone mer-kernel-check (needed for RPM build verification)
-          mkdir -p $ANDROID_ROOT/hybris
-          git clone https://github.com/mer-hybris/mer-kernel-check.git $ANDROID_ROOT/hybris/mer-kernel-check --depth=1
-          
-          # Create kernel .config with all required options for mer-kernel-check
-          mkdir -p $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}/obj/KERNEL_OBJ
-          cat > $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}/obj/KERNEL_OBJ/.config << 'KERNELCONFIG'
-          # Minimal kernel config to pass mer-kernel-check verification
-          # These are the required options for SailfishOS hybris
-          
-          # Basic kernel info
-          CONFIG_LOCALVERSION="-hybris"
-          
-          # Namespaces (required for containers/systemd)
-          CONFIG_NAMESPACES=y
-          CONFIG_UTS_NS=y
-          CONFIG_IPC_NS=y
-          CONFIG_USER_NS=y
-          CONFIG_PID_NS=y
-          CONFIG_NET_NS=y
-          
-          # CGroups (required for systemd)
-          CONFIG_CGROUPS=y
-          CONFIG_CGROUP_CPUACCT=y
-          CONFIG_CGROUP_DEVICE=y
-          CONFIG_CGROUP_FREEZER=y
-          CONFIG_CGROUP_SCHED=y
-          CONFIG_CPUSETS=y
-          CONFIG_MEMCG=y
-          CONFIG_MEMCG_SWAP=y
-          CONFIG_MEMCG_KMEM=y
-          CONFIG_CGROUP_PERF=y
-          CONFIG_CGROUP_BPF=y
-          CONFIG_BLK_CGROUP=y
-          
-          # Systemd requirements
-          CONFIG_DEVTMPFS=y
-          CONFIG_DEVTMPFS_MOUNT=y
-          CONFIG_TMPFS=y
-          CONFIG_TMPFS_POSIX_ACL=y
-          CONFIG_TMPFS_XATTR=y
-          CONFIG_SECCOMP=y
-          CONFIG_SECCOMP_FILTER=y
-          CONFIG_CHECKPOINT_RESTORE=y
-          CONFIG_SCHED_AUTOGROUP=y
-          CONFIG_FANOTIFY=y
-          CONFIG_FANOTIFY_ACCESS_PERMISSIONS=y
-          CONFIG_CRYPTO_USER_API_HASH=y
-          CONFIG_CRYPTO_HMAC=y
-          CONFIG_UEVENT_HELPER_PATH=""
-          CONFIG_FW_LOADER_USER_HELPER=y
-          CONFIG_CRYPTO_SHA256=y
-          CONFIG_DMIID=y
-          CONFIG_BLK_DEV_BSG=y
-          
-          # Audit
-          CONFIG_AUDIT=y
-          CONFIG_AUDITSYSCALL=y
-          
-          # Networking basics
-          CONFIG_NET=y
-          CONFIG_INET=y
-          CONFIG_IPV6=y
-          CONFIG_PACKET=y
-          CONFIG_UNIX=y
-          
-          # Netfilter / iptables (required for connman)
-          CONFIG_NETFILTER=y
-          CONFIG_NETFILTER_ADVANCED=y
-          CONFIG_NETFILTER_XTABLES=y
-          CONFIG_NETFILTER_XT_TARGET_CHECKSUM=y
-          CONFIG_NETFILTER_XT_TARGET_LOG=y
-          CONFIG_NETFILTER_XT_TARGET_MARK=y
-          CONFIG_NETFILTER_XT_TARGET_NFLOG=y
-          CONFIG_NETFILTER_XT_TARGET_NFQUEUE=y
-          CONFIG_NETFILTER_XT_TARGET_TCPMSS=y
-          CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y
-          CONFIG_NETFILTER_XT_MATCH_COMMENT=y
-          CONFIG_NETFILTER_XT_MATCH_CONNLIMIT=y
-          CONFIG_NETFILTER_XT_MATCH_CONNMARK=y
-          CONFIG_NETFILTER_XT_MATCH_CONNTRACK=y
-          CONFIG_NETFILTER_XT_MATCH_HASHLIMIT=y
-          CONFIG_NETFILTER_XT_MATCH_HELPER=y
-          CONFIG_NETFILTER_XT_MATCH_IPRANGE=y
-          CONFIG_NETFILTER_XT_MATCH_LENGTH=y
-          CONFIG_NETFILTER_XT_MATCH_LIMIT=y
-          CONFIG_NETFILTER_XT_MATCH_MAC=y
-          CONFIG_NETFILTER_XT_MATCH_MARK=y
-          CONFIG_NETFILTER_XT_MATCH_MULTIPORT=y
-          CONFIG_NETFILTER_XT_MATCH_NFACCT=y
-          CONFIG_NETFILTER_XT_MATCH_OWNER=y
-          CONFIG_NETFILTER_XT_MATCH_POLICY=y
-          CONFIG_NETFILTER_XT_MATCH_PKTTYPE=y
-          CONFIG_NETFILTER_XT_MATCH_QUOTA=y
-          CONFIG_NETFILTER_XT_MATCH_RATEEST=y
-          CONFIG_NETFILTER_XT_MATCH_REALM=y
-          CONFIG_NETFILTER_XT_MATCH_RECENT=y
-          CONFIG_NETFILTER_XT_MATCH_SCTP=y
-          CONFIG_NETFILTER_XT_MATCH_STATE=y
-          CONFIG_NETFILTER_XT_MATCH_STATISTIC=y
-          CONFIG_NETFILTER_XT_MATCH_STRING=y
-          CONFIG_NETFILTER_XT_MATCH_TCPMSS=y
-          CONFIG_NETFILTER_XT_MATCH_TIME=y
-          CONFIG_NETFILTER_XT_MATCH_U32=y
-          
-          # IPv4 netfilter
-          CONFIG_NF_CONNTRACK=y
-          CONFIG_NF_CONNTRACK_IPV4=y
-          CONFIG_NF_CONNTRACK_IPV6=y
-          CONFIG_NF_NAT=y
-          CONFIG_NF_NAT_IPV4=y
-          CONFIG_NF_NAT_IPV6=y
-          CONFIG_NF_NAT_MASQUERADE_IPV4=y
-          CONFIG_NF_NAT_MASQUERADE_IPV6=y
-          CONFIG_IP_NF_IPTABLES=y
-          CONFIG_IP_NF_FILTER=y
-          CONFIG_IP_NF_TARGET_REJECT=y
-          CONFIG_IP_NF_TARGET_LOG=y
-          CONFIG_IP_NF_MATCH_AH=y
-          CONFIG_IP_NF_NAT=y
-          CONFIG_IP_NF_TARGET_MASQUERADE=y
-          CONFIG_IP_NF_TARGET_REDIRECT=y
-          CONFIG_IP_NF_MANGLE=y
-          CONFIG_IP_NF_RAW=y
-          
-          # IPv6 netfilter
-          CONFIG_IP6_NF_IPTABLES=y
-          CONFIG_IP6_NF_FILTER=y
-          CONFIG_IP6_NF_TARGET_REJECT=y
-          CONFIG_IP6_NF_MANGLE=y
-          CONFIG_IP6_NF_RAW=y
-          CONFIG_IP6_NF_NAT=y
-          CONFIG_IP6_NF_TARGET_MASQUERADE=y
-          
-          # Bridge netfilter
-          CONFIG_BRIDGE=y
-          CONFIG_BRIDGE_NETFILTER=y
-          CONFIG_NF_TABLES=y
-          CONFIG_NF_TABLES_BRIDGE=y
-          CONFIG_NFT_BRIDGE_META=y
-          CONFIG_NFT_BRIDGE_REJECT=y
-          CONFIG_NF_LOG_BRIDGE=y
-          CONFIG_BRIDGE_NF_EBTABLES=y
-          
-          # Conntrack helpers
-          CONFIG_NF_CONNTRACK_FTP=y
-          CONFIG_NF_CONNTRACK_IRC=y
-          CONFIG_NF_CONNTRACK_TFTP=y
-          CONFIG_NF_CT_NETLINK=y
-          
-          # VPN support
-          CONFIG_TUN=y
-          CONFIG_PPP=y
-          CONFIG_PPP_BSDCOMP=y
-          CONFIG_PPP_DEFLATE=y
-          CONFIG_PPP_MPPE=y
-          CONFIG_PPP_SYNC_TTY=y
-          CONFIG_PPPOE=y
-          CONFIG_PPTP=y
-          CONFIG_L2TP=y
-          
-          # Wireless
-          CONFIG_WIRELESS=y
-          CONFIG_CFG80211=y
-          CONFIG_MAC80211=y
-          CONFIG_RFKILL=y
-          
-          # Block devices
-          CONFIG_BLK_DEV_LOOP=y
-          CONFIG_BLK_DEV_DM=y
-          CONFIG_DM_CRYPT=y
-          CONFIG_BLK_DEV_MD=y
-          
-          # File systems
-          CONFIG_EXT4_FS=y
-          CONFIG_EXT4_FS_POSIX_ACL=y
-          CONFIG_EXT4_FS_SECURITY=y
-          CONFIG_F2FS_FS=y
-          CONFIG_FUSE_FS=y
-          CONFIG_OVERLAY_FS=y
-          CONFIG_SQUASHFS=y
-          CONFIG_SQUASHFS_XZ=y
-          CONFIG_SQUASHFS_LZO=y
-          CONFIG_SQUASHFS_LZ4=y
-          CONFIG_VFAT_FS=y
-          CONFIG_MSDOS_FS=y
-          CONFIG_ISO9660_FS=y
-          CONFIG_UDF_FS=y
-          CONFIG_NFS_FS=y
-          CONFIG_NFS_V3=y
-          CONFIG_NFS_V3_ACL=y
-          CONFIG_NFS_V4=y
-          CONFIG_NFSD=y
-          CONFIG_LOCKD=y
-          CONFIG_SUNRPC=y
-          CONFIG_PROC_FS=y
-          CONFIG_SYSFS=y
-          CONFIG_CONFIGFS_FS=y
-          CONFIG_AUTOFS4_FS=y
-          CONFIG_INOTIFY_USER=y
-          
-          # Crypto
-          CONFIG_CRYPTO=y
-          CONFIG_CRYPTO_AES=y
-          CONFIG_CRYPTO_CBC=y
-          CONFIG_CRYPTO_ECB=y
-          CONFIG_CRYPTO_HMAC=y
-          CONFIG_CRYPTO_MD5=y
-          CONFIG_CRYPTO_SHA1=y
-          CONFIG_CRYPTO_SHA256=y
-          CONFIG_CRYPTO_SHA512=y
-          CONFIG_CRYPTO_DES=y
-          CONFIG_CRYPTO_XTS=y
-          CONFIG_CRYPTO_LZO=y
-          CONFIG_CRYPTO_ZLIB=y
-          CONFIG_CRYPTO_USER_API=y
-          CONFIG_CRYPTO_USER_API_HASH=y
-          CONFIG_CRYPTO_USER_API_SKCIPHER=y
-          
-          # Input
-          CONFIG_INPUT=y
-          CONFIG_INPUT_EVDEV=y
-          CONFIG_INPUT_UINPUT=y
-          
-          # IPC
-          CONFIG_SYSVIPC=y
-          CONFIG_POSIX_MQUEUE=y
-          
-          # Misc required by mer-kernel-check
-          CONFIG_ANDROID=y
-          CONFIG_ANDROID_BINDER_IPC=y
-          CONFIG_ASHMEM=y
-          CONFIG_STAGING=y
-          CONFIG_VT=y
-          CONFIG_VT_CONSOLE=y
-          CONFIG_UNIX98_PTYS=y
-          CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
-          CONFIG_LEGACY_PTYS=n
-          CONFIG_PRINTK=y
-          CONFIG_BUG=y
-          CONFIG_ELF_CORE=y
-          CONFIG_BASE_FULL=y
-          CONFIG_FUTEX=y
-          CONFIG_EPOLL=y
-          CONFIG_SIGNALFD=y
-          CONFIG_TIMERFD=y
-          CONFIG_EVENTFD=y
-          CONFIG_SHMEM=y
-          CONFIG_AIO=y
-          CONFIG_ADVISE_SYSCALLS=y
-          CONFIG_EMBEDDED=n
-          CONFIG_KALLSYMS=y
-          CONFIG_KALLSYMS_ALL=y
-          CONFIG_PERF_EVENTS=y
-          CONFIG_SCHEDSTATS=y
-          CONFIG_NET_SCHED=y
-          CONFIG_NET_SCH_FQ_CODEL=y
-          
-          # Watchdog
-          CONFIG_WATCHDOG=y
-          CONFIG_WATCHDOG_CORE=y
-          CONFIG_WATCHDOG_NOWAYOUT=n
-          
-          # Power management
-          CONFIG_PM=y
-          CONFIG_PM_SLEEP=y
-          CONFIG_PM_AUTOSLEEP=y
-          CONFIG_PM_WAKELOCKS=y
-          CONFIG_SUSPEND=y
-          CONFIG_HIBERNATION=n
-          
-          # ARM64 specific
-          CONFIG_ARM64=y
-          CONFIG_COMPAT=y
-          CONFIG_ARCH_QCOM=y
-          KERNELCONFIG
-          
-          # Clone the raphael-specific repos
-          cd $ANDROID_ROOT
-          
-          # Clone droid-hal-raphael (goes to rpm/)
-          git clone --recurse-submodules https://github.com/Andrew21P/droid-hal-raphael.git rpm --depth=1
-          
-          # PATCH: Skip kernel config verification since HAL already built and works
-          # The original is a multi-line command, so we need to remove both lines
-          sed -i '/mer_verify_kernel_config/,/\.config$/d' rpm/dhd/droid-hal-device.inc
-          # Also insert a placeholder so the script doesn't fail
-          sed -i 's/echo Verifying kernel config/echo "SKIPPING kernel config check - kernel already verified in HAL build"/' rpm/dhd/droid-hal-device.inc
-          
-          # Clone droid-config-raphael (goes to hybris/droid-configs/)
-          git clone --recurse-submodules https://github.com/Andrew21P/droid-config-raphael.git hybris/droid-configs --depth=1
-          
-          # Clone droid-hal-version-raphael
-          git clone --recurse-submodules https://github.com/Andrew21P/droid-hal-version-raphael.git hybris/droid-hal-version-${{ env.DEVICE }} --depth=1
-          
-          # Clone hybris-installer for flashable zip creation
-          git clone https://github.com/mer-hybris/hybris-installer.git hybris/hybris-installer --depth=1 || true
-          
-          # Create hadk.env for the build
-          cat > hadk.env << EOF
-          export MER_ROOT=/srv/mer
-          export PLATFORM_SDK_ROOT=/
-          export VENDOR="${{ env.VENDOR }}"
-          export DEVICE="${{ env.DEVICE }}"
-          export PORT_ARCH="${{ env.PORT_ARCH }}"
-          export HYBRIS_BRANCH="hybris-17.1"
-          export SAILFISH_VERSION=${{ env.SAILFISH_OS_VERSION }}
-          export RELEASE=${{ env.SAILFISH_OS_VERSION }}
-          export EXTRA_NAME="-alpha1"
-          export ANDROID_ROOT=/home/mersdk/work/hadk_17.1
-          export MER_TMPDIR=\$MER_ROOT/tmp
-          export HYBRIS_MW_ROOT=\$ANDROID_ROOT/hybris/mw/
-          export PATH=\$PATH:~/bin/
-          EOF
-          
-          # Create build-rpm.sh script (adapted from davinci)
-          cat > build-rpm.sh << 'BUILDSCRIPT'
-          #!/bin/bash
-          set -x
-          source /home/mersdk/work/hadk_17.1/hadk.env
-          export ANDROID_ROOT=/home/mersdk/work/hadk_17.1
-          
-          sudo chown -R $(whoami):$(whoami) /home/mersdk/work
-          
-          cd $ANDROID_ROOT
-          
-          # Setup scratchbox target
-          cd ~/.scratchbox2
-          cp -R SailfishOS-*-$PORT_ARCH $VENDOR-$DEVICE-$PORT_ARCH 2>/dev/null || true
-          cd $VENDOR-$DEVICE-$PORT_ARCH 2>/dev/null || cd ~/.scratchbox2
-          sed -i "s/SailfishOS-$SAILFISH_VERSION/$VENDOR-$DEVICE/g" sb2.config 2>/dev/null || true
-          
-          sudo ln -sf /srv/mer/targets/SailfishOS-$SAILFISH_VERSION-$PORT_ARCH /srv/mer/targets/$VENDOR-$DEVICE-$PORT_ARCH 2>/dev/null || true
-          sudo ln -sf /srv/mer/toolings/SailfishOS-$SAILFISH_VERSION /srv/mer/toolings/$VENDOR-$DEVICE 2>/dev/null || true
-          
-          # Build packages
-          cd $ANDROID_ROOT
-          
-          git config --global user.email "ci@github.com"
-          git config --global user.name "Github Actions"
-          git config --global --add safe.directory '*'
-          
-          # Mount binfmt for ARM emulation
-          sudo mkdir -p /proc/sys/fs/binfmt_misc/
-          sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
-          
-          # Run build_packages if available
-          if [ -f rpm/dhd/helpers/build_packages.sh ]; then
-            chmod +x rpm/dhd/helpers/build_packages.sh
-            rpm/dhd/helpers/build_packages.sh || echo "Build packages completed with warnings"
-          fi
-          BUILDSCRIPT
-          chmod +x build-rpm.sh
-          
-          echo "DHD environment prepared with SailfishOS ${{ env.SAILFISH_OS_VERSION }}"
-          echo "Repos cloned:"
-          ls -la $ANDROID_ROOT/rpm/
-          ls -la $ANDROID_ROOT/hybris/droid-configs/
-          ls -la $ANDROID_ROOT/hybris/droid-hal-version-${{ env.DEVICE }}/
-
-      - name: Build packages in container
-        run: |
-          export ANDROID_ROOT=~/work/hadk_17.1
-          
-          # Pull the Sailfish Platform SDK docker image
-          docker pull coderus/sailfishos-platform-sdk:${{ env.SAILFISH_SDK_VERSION }} || \
-            docker pull coderus/sailfishos-platform-sdk:latest
-          
-          # Run the DHD build inside the container
-          docker run --privileged \
-            -v ~/work:/home/mersdk/work \
-            coderus/sailfishos-platform-sdk:${{ env.SAILFISH_SDK_VERSION }} \
-            /bin/bash /home/mersdk/work/hadk_17.1/build-rpm.sh || echo "RPM build completed"
-          
-          # Check what was built
-          echo "=== Build outputs ==="
-          find ~/work -name "*.rpm" 2>/dev/null | head -20 || true
-          find ~/work -name "sailfishos-*.zip" 2>/dev/null || true
-          ls -la ~/work/hadk_17.1/out/target/product/${{ env.DEVICE }}/ || true
-
-      - name: Package flashable ZIP
-        run: |
-          mkdir -p sailfish-${{ env.DEVICE }}-output
-          
-          # Copy HAL images
-          cp hal-output/hybris-boot.img sailfish-${{ env.DEVICE }}-output/ 2>/dev/null || true
-          cp hal-output/hybris-recovery.img sailfish-${{ env.DEVICE }}-output/ 2>/dev/null || true
-          cp hal-output/system.img sailfish-${{ env.DEVICE }}-output/ 2>/dev/null || true
-          cp hal-output/vendor.img sailfish-${{ env.DEVICE }}-output/ 2>/dev/null || true
+          # Copy boot images
+          cp hal-output/hybris-boot.img sailfish-${{ env.DEVICE }}/ 2>/dev/null || true
+          cp hal-output/hybris-recovery.img sailfish-${{ env.DEVICE }}/ 2>/dev/null || true
           
           # Create flash script
-          cat > sailfish-${{ env.DEVICE }}-output/flash.sh << 'EOF'
+          cat > sailfish-${{ env.DEVICE }}/flash.sh << 'EOF'
           #!/bin/bash
           echo "=== SailfishOS Flash Script for Xiaomi Mi 9T Pro (raphael) ==="
           echo ""
+          echo "This will flash hybris-boot to test the SailfishOS kernel."
+          echo ""
           echo "Prerequisites:"
-          echo "1. Unlock bootloader"
-          echo "2. Device in fastboot mode (hold Power + Vol Down)"
+          echo "1. Bootloader unlocked"
+          echo "2. Device in fastboot mode (Power + Vol Down)"
+          echo "3. Stock Android/Pixel Experience vendor partition intact"
           echo ""
-          read -p "Press Enter to continue..."
+          read -p "Press Enter to continue or Ctrl+C to cancel..."
           
+          # Disable verity first
+          echo "Disabling verified boot..."
+          fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img 2>/dev/null || \
+            echo "vbmeta not found - you may need to disable verity manually"
+          
+          echo "Flashing hybris-boot..."
           fastboot flash boot hybris-boot.img
-          fastboot flash recovery hybris-recovery.img
-          
-          if [ -f system.img ]; then
-            fastboot flash system system.img
-          fi
-          
-          if [ -f vendor.img ]; then
-            fastboot flash vendor vendor.img
-          fi
           
           echo ""
-          echo "Flash complete! Reboot with: fastboot reboot"
+          echo "Done! Reboot with: fastboot reboot"
+          echo ""
+          echo "If device bootloops:"
+          echo "  1. Boot to fastboot again"
+          echo "  2. Flash back your original boot.img"
+          echo ""
+          echo "To see kernel output, run: adb shell dmesg"
           EOF
-          chmod +x sailfish-${{ env.DEVICE }}-output/flash.sh
+          chmod +x sailfish-${{ env.DEVICE }}/flash.sh
           
           # Create README
-          cat > sailfish-${{ env.DEVICE }}-output/README.md << 'EOF'
-          # SailfishOS 5.0.0.43 (Tampella) for Xiaomi Mi 9T Pro (raphael)
+          cat > sailfish-${{ env.DEVICE }}/README.md << 'EOF'
+          # SailfishOS Kernel Test for Xiaomi Mi 9T Pro (raphael)
           
-          ## Files
-          - hybris-boot.img - Boot image with SailfishOS kernel
-          - hybris-recovery.img - Recovery image
-          - system.img - Android HAL system (if included)
-          - vendor.img - Vendor blobs (if included)
+          This is a **kernel test build** - not a full SailfishOS installation.
+          
+          ## What this contains
+          - `hybris-boot.img` - Kernel with SailfishOS/hybris patches
+          - `hybris-recovery.img` - Recovery image
           
           ## Flash Instructions
           
-          1. Unlock bootloader (if not done)
-          2. Boot to fastboot: `adb reboot bootloader`
-          3. Disable verified boot: `fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img`
-          4. Run: `./flash.sh` or manually:
+          1. **Backup your current boot image first!**
+             ```
+             adb reboot bootloader
+             fastboot boot twrp.img  # or your recovery
+             # In TWRP: backup boot partition
+             ```
+          
+          2. **Flash hybris-boot**
              ```
              fastboot flash boot hybris-boot.img
-             fastboot flash recovery hybris-recovery.img
+             fastboot reboot
              ```
-          5. Reboot: `fastboot reboot`
           
-          ## Notes
-          - First boot may take 2-5 minutes
-          - If stuck in bootloop, disable verity as shown above
-          - Based on hybris-17.1 (Android 10)
+          3. **What to expect**
+             - First boot: Device will likely show black screen or bootloop
+             - This is NORMAL for first hybris kernel test
+             - Connect via USB and check: `adb shell dmesg` or `adb logcat`
           
-          SailfishOS Version: 5.0.0.43 (Tampella)
-          Built with GitHub Actions CI
+          ## If it doesn't boot
+          - Boot to fastboot: Hold Power + Vol Down
+          - Flash your backup boot.img
+          - Report any serial output you captured
+          
+          ## Next Steps
+          After kernel boots, we need to build the full SailfishOS rootfs.
+          
+          Based on hybris-17.1 (Android 10)
+          Device: Xiaomi Mi 9T Pro (raphael) - SM8150 Snapdragon 855
           EOF
           
-          ls -la sailfish-${{ env.DEVICE }}-output/
+          ls -la sailfish-${{ env.DEVICE }}/
 
-      - name: Upload Sailfish Package
+      - name: Upload Package
         uses: actions/upload-artifact@v4
         with:
-          name: sailfish-${{ env.DEVICE }}-flashable
-          path: sailfish-${{ env.DEVICE }}-output/
+          name: sailfish-${{ env.DEVICE }}-test
+          path: sailfish-${{ env.DEVICE }}/
