@@ -2477,6 +2477,107 @@ case "$DEVICE" in
             "$@"
         ;;
 
+    "raphael"|"raphaelin")
+        # Xiaomi Mi 9T Pro - SM8150 (msmnile) - Verified 2025-02-17
+        sed -i \
+            -e 's block/bootdevice/by-name/boot sde49 ' \
+            -e 's block/bootdevice/by-name/recovery sda28 ' \
+            -e 's block/bootdevice/by-name/dtbo sde45 ' \
+            -e 's block/bootdevice/by-name/system sde54 ' \
+            -e 's block/bootdevice/by-name/vendor sde53 ' \
+            -e 's block/bootdevice/by-name/userdata sda31 ' \
+            -e 's block/bootdevice/by-name/cache sda29 ' \
+            -e 's block/bootdevice/by-name/persist sda23 ' \
+            -e 's block/bootdevice/by-name/misc sda11 ' \
+            -e 's block/bootdevice/by-name/modem sde52 ' \
+            -e 's block/bootdevice/by-name/dsp sde48 ' \
+            -e 's block/bootdevice/by-name/bluetooth sde26 ' \
+            -e 's block/bootdevice/by-name/vbmeta sde10 ' \
+            -e 's block/bootdevice/by-name/vbmeta_system sde47 ' \
+            -e 's block/bootdevice/by-name/abl sde17 ' \
+            -e 's block/bootdevice/by-name/ablbak sde18 ' \
+            -e 's block/bootdevice/by-name/xbl sdb2 ' \
+            -e 's block/bootdevice/by-name/xbl_config sdb1 ' \
+            -e 's block/bootdevice/by-name/xbl_configbak sdc1 ' \
+            -e 's block/bootdevice/by-name/xblbak sdc2 ' \
+            -e 's block/bootdevice/by-name/tz sde19 ' \
+            -e 's block/bootdevice/by-name/tzbak sde20 ' \
+            -e 's block/bootdevice/by-name/hyp sde21 ' \
+            -e 's block/bootdevice/by-name/hypbak sde22 ' \
+            -e 's block/bootdevice/by-name/keymaster sde31 ' \
+            -e 's block/bootdevice/by-name/keymasterbak sde32 ' \
+            -e 's block/bootdevice/by-name/cmnlib sde27 ' \
+            -e 's block/bootdevice/by-name/cmnlibbak sde28 ' \
+            -e 's block/bootdevice/by-name/cmnlib64 sde29 ' \
+            -e 's block/bootdevice/by-name/cmnlib64bak sde30 ' \
+            -e 's block/bootdevice/by-name/devcfg sde33 ' \
+            -e 's block/bootdevice/by-name/devcfgbak sde34 ' \
+            -e 's block/bootdevice/by-name/qupfw sde35 ' \
+            -e 's block/bootdevice/by-name/qupfwbak sde36 ' \
+            -e 's block/bootdevice/by-name/storsec sde37 ' \
+            -e 's block/bootdevice/by-name/uefisecapp sde38 ' \
+            -e 's block/bootdevice/by-name/uefisecappbak sde39 ' \
+            -e 's block/bootdevice/by-name/modemst1 sdf2 ' \
+            -e 's block/bootdevice/by-name/modemst2 sdf3 ' \
+            -e 's block/bootdevice/by-name/fsc sdf5 ' \
+            -e 's block/bootdevice/by-name/fsg sdf1 ' \
+            -e 's block/bootdevice/by-name/aop sde11 ' \
+            -e 's block/bootdevice/by-name/aopbak sde12 ' \
+            -e 's block/bootdevice/by-name/ALIGN_TO_128K_1 sda1 ' \
+            -e 's block/bootdevice/by-name/ALIGN_TO_128K_2 sde1 ' \
+            -e 's block/bootdevice/by-name/cdt sda2 ' \
+            -e 's block/bootdevice/by-name/ddr sda3 ' \
+            -e 's block/bootdevice/by-name/apdp sda4 ' \
+            -e 's block/bootdevice/by-name/msadp sda5 ' \
+            -e 's block/bootdevice/by-name/dip sda6 ' \
+            -e 's block/bootdevice/by-name/devinfo sda7 ' \
+            -e 's block/bootdevice/by-name/spunvm sda8 ' \
+            -e 's block/bootdevice/by-name/limits sda9 ' \
+            -e 's block/bootdevice/by-name/limits-cdsp sda10 ' \
+            -e 's block/bootdevice/by-name/logdump sda12 ' \
+            -e 's block/bootdevice/by-name/uefivarstore sda13 ' \
+            -e 's block/bootdevice/by-name/rawdump sda14 ' \
+            -e 's block/bootdevice/by-name/secdata sda15 ' \
+            -e 's block/bootdevice/by-name/oops sda16 ' \
+            -e 's block/bootdevice/by-name/minidump sda17 ' \
+            -e 's block/bootdevice/by-name/logfs sda18 ' \
+            -e 's block/bootdevice/by-name/splash sda19 ' \
+            -e 's block/bootdevice/by-name/keystore sda20 ' \
+            -e 's block/bootdevice/by-name/frp sda21 ' \
+            -e 's block/bootdevice/by-name/ffu sda22 ' \
+            -e 's block/bootdevice/by-name/catecontentfv sda24 ' \
+            -e 's block/bootdevice/by-name/catefv sda25 ' \
+            -e 's block/bootdevice/by-name/catepersist sda26 ' \
+            -e 's block/bootdevice/by-name/mdtpsecapp sda27 ' \
+            -e 's block/bootdevice/by-name/cust sda30 ' \
+            -e 's block/bootdevice/by-name/ssd sde2 ' \
+            -e 's block/bootdevice/by-name/dbg sde3 ' \
+            -e 's block/bootdevice/by-name/toolsfv sde4 ' \
+            -e 's block/bootdevice/by-name/loader_sti sde5 ' \
+            -e 's block/bootdevice/by-name/imagefv sde6 ' \
+            -e 's block/bootdevice/by-name/ImageFvbak sde7 ' \
+            -e 's block/bootdevice/by-name/multiimgoem sde8 ' \
+            -e 's block/bootdevice/by-name/multiimgqti sde9 ' \
+            -e 's block/bootdevice/by-name/featenabler sde13 ' \
+            -e 's block/bootdevice/by-name/featenablerbak sde14 ' \
+            -e 's block/bootdevice/by-name/core_nhlos sde15 ' \
+            -e 's block/bootdevice/by-name/core_nhlosbak sde16 ' \
+            -e 's block/bootdevice/by-name/apdp_disk sde23 ' \
+            -e 's block/bootdevice/by-name/msadp_disk sde24 ' \
+            -e 's block/bootdevice/by-name/spss sde25 ' \
+            -e 's block/bootdevice/by-name/mdtp sde40 ' \
+            -e 's block/bootdevice/by-name/mdtpbak sde41 ' \
+            -e 's block/bootdevice/by-name/abl sde42 ' \
+            -e 's block/bootdevice/by-name/ablbak sde43 ' \
+            -e 's block/bootdevice/by-name/cateloader sde44 ' \
+            -e 's block/bootdevice/by-name/logo sde46 ' \
+            -e 's block/bootdevice/by-name/vm-data sde50 ' \
+            -e 's block/bootdevice/by-name/vm-keystore sde51 ' \
+            -e 's block/bootdevice/by-name/product sde55 ' \
+            -e 's block/bootdevice/by-name/fdemeta sdf4 ' \
+            "$@"
+        ;;
+
     *)
         cat <<EOF
 
