@@ -146,6 +146,9 @@ jobs:
           cd $ANDROID_ROOT
           source build/envsetup.sh
           
+          # Set ALLOW_MISSING_DEPENDENCIES for hybris builds (standard practice)
+          export ALLOW_MISSING_DEPENDENCIES=true
+          
           # Try different lunch targets
           breakfast raphael userdebug || \
             lunch aosp_raphael-userdebug || \
