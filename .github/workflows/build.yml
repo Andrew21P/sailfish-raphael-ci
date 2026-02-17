@@ -84,15 +84,14 @@ jobs:
         run: |
           cd $ANDROID_ROOT
           
-          # Device repos for raphael (SM8150 / Snapdragon 855) - LineageOS with lineage-17.1
-          git clone https://github.com/LineageOS/android_device_xiaomi_raphael.git -b lineage-17.1 device/xiaomi/raphael --depth=1 || true
-          git clone https://github.com/LineageOS/android_device_xiaomi_sm8150-common.git -b lineage-17.1 device/xiaomi/sm8150-common --depth=1 || true
-          git clone https://github.com/LineageOS/android_kernel_xiaomi_sm8150.git -b lineage-17.1 kernel/xiaomi/sm8150 --depth=1 || true
+          # Device repos for raphael - PixelExperience with 'ten' branch (Android 10)
+          git clone https://github.com/PixelExperience-Devices/device_xiaomi_raphael.git -b ten device/xiaomi/raphael --depth=1 || true
+          git clone https://github.com/PixelExperience-Devices/kernel_xiaomi_raphael.git -b ten kernel/xiaomi/raphael --depth=1 || true
           git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-17.1 hardware/xiaomi --depth=1 || true
           
           # Vendor blobs - stub for HAL build (vendor not required for hybris-hal)
-          mkdir -p vendor/xiaomi/raphael vendor/xiaomi/sm8150-common
-          touch vendor/xiaomi/raphael/Android.bp vendor/xiaomi/sm8150-common/Android.bp
+          mkdir -p vendor/xiaomi/raphael
+          touch vendor/xiaomi/raphael/Android.bp
           
           # Hybris boot with fixup (mer-hybris official repos)
           rm -rf hybris/hybris-boot
