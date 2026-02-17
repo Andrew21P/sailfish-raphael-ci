@@ -13,10 +13,16 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      name:
-        description: 'trigger to build'
-        required: true
-        default: 'run'
+      skip_hal_build:
+        description: 'Skip HAL build (use existing artifacts)'
+        required: false
+        type: boolean
+        default: false
+      hal_run_id:
+        description: 'Run ID to download HAL artifacts from (if skipping HAL build)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -29,9 +35,10 @@ env:
   PORT_ARCH: aarch64
 
 jobs:
-  # Combined build job
+  # Job 1: Build HAL (hybris-boot.img, etc.) - SKIP if reusing artifacts
   build:
     runs-on: ubuntu-22.04
+    if: ${{ github.event.inputs.skip_hal_build != 'true' }}
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
@@ -197,17 +204,29 @@ jobs:
 
   # 2. Build Sailfish rootfs
   build-rootfs:
-    needs: build
+    needs: [build]
+    if: ${{ always() && (needs.build.result == 'success' || github.event.inputs.skip_hal_build == 'true') }}
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download HAL artifacts
+      - name: Download HAL artifacts (from current run)
+        if: ${{ github.event.inputs.skip_hal_build != 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: hal-output
           path: hal-output
+
+      - name: Download HAL artifacts (from previous run)
+        if: ${{ github.event.inputs.skip_hal_build == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: hal-output
+          path: hal-output
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.inputs.hal_run_id }}
 
       - name: Build DHD RPMs in Sailfish SDK container
         run: |
