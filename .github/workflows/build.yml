@@ -173,7 +173,10 @@ jobs:
           # Check if device tree was found
           ls -la $ANDROID_ROOT/device/xiaomi/raphael/ || echo "WARNING: Device tree not found!"
           
-          make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot hybris-recovery systemimage vendorimage
+          # Build ONLY hybris targets - do NOT fall back to full system build
+          # hybris-hal includes boot, recovery, and HAL libs
+          # droidmedia is needed for camera/media
+          make -j$(nproc --all) hybris-boot hybris-recovery droidmedia
           
           # List what was built
           echo "=== Build outputs ==="
