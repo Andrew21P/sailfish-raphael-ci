@@ -16,7 +16,7 @@ permissions:
 env:
   DEVICE: raphael
   VENDOR: xiaomi
-  ANDROID_ROOT: /mnt/build/hadk_17.1
+  ANDROID_ROOT: /mnt/build/hadk_18.1
   SAILFISH_SDK_VERSION: 5.0.0.43
 
 jobs:
@@ -70,11 +70,11 @@ jobs:
           git config --global user.email "ci@github.com"
           git config --global user.name "Github Actions"
 
-      - name: Repo sync hybris-17.1
+      - name: Repo sync hybris-18.1
         run: |
           mkdir -p $ANDROID_ROOT
           cd $ANDROID_ROOT
-          python3 ~/bin/repo init -u https://github.com/mer-hybris/android.git -b hybris-17.1 --depth=1
+          python3 ~/bin/repo init -u https://github.com/mer-hybris/android.git -b hybris-18.1 --depth=1
           python3 ~/bin/repo sync -j$(nproc --all) -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync
           
           echo "=== After repo sync ==="
@@ -84,10 +84,10 @@ jobs:
         run: |
           cd $ANDROID_ROOT
           
-          # Device repos for raphael - PixelExperience with 'ten' branch (Android 10)
-          git clone https://github.com/PixelExperience-Devices/device_xiaomi_raphael.git -b ten device/xiaomi/raphael --depth=1 || true
-          git clone https://github.com/PixelExperience-Devices/kernel_xiaomi_raphael.git -b ten kernel/xiaomi/raphael --depth=1 || true
-          git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-17.1 hardware/xiaomi --depth=1 || true
+          # Device repos for raphael - PixelExperience with 'eleven' branch (Android 11)
+          git clone https://github.com/PixelExperience-Devices/device_xiaomi_raphael.git -b eleven device/xiaomi/raphael --depth=1 || true
+          git clone https://github.com/PixelExperience-Devices/kernel_xiaomi_raphael.git -b eleven kernel/xiaomi/raphael --depth=1 || true
+          git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-18.1 hardware/xiaomi --depth=1 || true
           
           # Vendor blobs - stub for HAL build (vendor not required for hybris-hal)
           mkdir -p vendor/xiaomi/raphael
