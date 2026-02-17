@@ -115,8 +115,8 @@ jobs:
           # Copy our fixup-mountpoints with raphael support
           cp ${{ github.workspace }}/fixup-mountpoints $ANDROID_ROOT/hybris/hybris-boot/
           
-          # Hardware xiaomi
-          git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-18.1 $ANDROID_ROOT/hardware/xiaomi --depth=1 --single-branch
+          # Hardware xiaomi (use lineage-16.0 for Android 9 compatibility)
+          git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-16.0 $ANDROID_ROOT/hardware/xiaomi --depth=1 --single-branch || true
 
           # Build
           cd $ANDROID_ROOT
