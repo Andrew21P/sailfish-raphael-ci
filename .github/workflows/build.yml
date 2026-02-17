@@ -83,6 +83,7 @@ jobs:
           CONFIG_MEMCG_KMEM=y
           CONFIG_CGROUP_PERF=y
           CONFIG_CGROUP_BPF=y
+          CONFIG_BLK_CGROUP=y
           
           # Systemd requirements
           CONFIG_DEVTMPFS=y
@@ -98,6 +99,8 @@ jobs:
           CONFIG_FANOTIFY_ACCESS_PERMISSIONS=y
           CONFIG_CRYPTO_USER_API_HASH=y
           CONFIG_CRYPTO_HMAC=y
+          CONFIG_UEVENT_HELPER_PATH=""
+          CONFIG_FW_LOADER_USER_HELPER=y
           CONFIG_CRYPTO_SHA256=y
           CONFIG_DMIID=y
           CONFIG_BLK_DEV_BSG=y
