@@ -174,6 +174,27 @@ jobs:
           git clone https://github.com/LineageOS/android_hardware_xiaomi.git \
             -b lineage-18.1 $ANDROID_ROOT/hardware/xiaomi --depth=1 --single-branch || true
 
+          # Qualcomm Display HAL (critical for SM8150/Adreno 640)
+          rm -rf $ANDROID_ROOT/hardware/qcom-caf/sm8150/display || true
+          git clone https://github.com/AleGasMex/android_hardware_qcom_display.git \
+            -b lineage-18.1-caf-sm8150 $ANDROID_ROOT/hardware/qcom-caf/sm8150/display --depth=1 || \
+          git clone https://github.com/LineageOS/android_hardware_qcom_display.git \
+            -b lineage-18.1-caf-sm8150 $ANDROID_ROOT/hardware/qcom-caf/sm8150/display --depth=1 || true
+
+          # Qualcomm Audio HAL (SM8150)
+          rm -rf $ANDROID_ROOT/hardware/qcom-caf/sm8150/audio || true
+          git clone https://github.com/AleGasMex/android_hardware_qcom_audio.git \
+            -b lineage-18.1-caf-sm8150 $ANDROID_ROOT/hardware/qcom-caf/sm8150/audio --depth=1 || \
+          git clone https://github.com/LineageOS/android_hardware_qcom_audio.git \
+            -b lineage-18.1-caf-sm8150 $ANDROID_ROOT/hardware/qcom-caf/sm8150/audio --depth=1 || true
+
+          # Qualcomm Media HAL (SM8150)
+          rm -rf $ANDROID_ROOT/hardware/qcom-caf/sm8150/media || true
+          git clone https://github.com/AleGasMex/android_hardware_qcom_media.git \
+            -b lineage-18.1-caf-sm8150 $ANDROID_ROOT/hardware/qcom-caf/sm8150/media --depth=1 || \
+          git clone https://github.com/LineageOS/android_hardware_qcom_media.git \
+            -b lineage-18.1-caf-sm8150 $ANDROID_ROOT/hardware/qcom-caf/sm8150/media --depth=1 || true
+
           #------------------------------------------
           # Replace hybris-boot with fixup-mountpoints
           #------------------------------------------
