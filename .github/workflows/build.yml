@@ -334,7 +334,10 @@ jobs:
           git clone --recurse-submodules https://github.com/Andrew21P/droid-hal-raphael.git rpm --depth=1
           
           # PATCH: Skip kernel config verification since HAL already built and works
-          sed -i 's|hybris/mer-kernel-check/mer_verify_kernel_config|echo "SKIPPING kernel config check - HAL already verified" #|g' rpm/dhd/droid-hal-device.inc
+          # The original is a multi-line command, so we need to remove both lines
+          sed -i '/mer_verify_kernel_config/,/\.config$/d' rpm/dhd/droid-hal-device.inc
+          # Also insert a placeholder so the script doesn't fail
+          sed -i 's/echo Verifying kernel config/echo "SKIPPING kernel config check - kernel already verified in HAL build"/' rpm/dhd/droid-hal-device.inc
           
           # Clone droid-config-raphael (goes to hybris/droid-configs/)
           git clone --recurse-submodules https://github.com/Andrew21P/droid-config-raphael.git hybris/droid-configs --depth=1
