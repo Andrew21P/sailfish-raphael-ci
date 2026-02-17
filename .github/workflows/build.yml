@@ -118,6 +118,9 @@ jobs:
           # Hardware xiaomi (use lineage-16.0 for Android 9 compatibility)
           git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-16.0 $ANDROID_ROOT/hardware/xiaomi --depth=1 --single-branch || true
 
+          # Fix missing metalava directory
+          mkdir -p $ANDROID_ROOT/tools/metalava/manual
+
           # Build
           cd $ANDROID_ROOT
           source build/envsetup.sh
