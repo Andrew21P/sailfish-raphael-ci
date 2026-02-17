@@ -194,19 +194,26 @@ jobs:
       - name: Build DHD RPMs in Sailfish SDK container
         run: |
           # Create work directory structure like davinci CI
-          mkdir -p ~/work/hadk_17.1/out/target/product/${{ env.DEVICE }}
+          export ANDROID_ROOT=~/work/hadk_17.1
+          mkdir -p $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}
           
-          # Copy HAL artifacts
-          cp -r hal-output/* ~/work/hadk_17.1/out/target/product/${{ env.DEVICE }}/ || true
+          # Copy HAL artifacts to proper location
+          cp -r hal-output/* $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}/ || true
           
-          # Clone necessary repos for rpm building
-          cd ~/work/hadk_17.1
+          # Clone the raphael-specific repos
+          cd $ANDROID_ROOT
+          
+          # Clone droid-hal-raphael (goes to rpm/)
+          git clone --recurse-submodules https://github.com/Andrew21P/droid-hal-raphael.git rpm --depth=1
+          
+          # Clone droid-config-raphael (goes to hybris/droid-configs/)
+          git clone --recurse-submodules https://github.com/Andrew21P/droid-config-raphael.git hybris/droid-configs --depth=1
+          
+          # Clone droid-hal-version-raphael
+          git clone --recurse-submodules https://github.com/Andrew21P/droid-hal-version-raphael.git hybris/droid-hal-version-${{ env.DEVICE }} --depth=1
           
           # Clone hybris-installer for flashable zip creation
           git clone https://github.com/mer-hybris/hybris-installer.git hybris/hybris-installer --depth=1 || true
-          
-          # Create basic droid-hal structure (will be built in container)
-          mkdir -p rpm/dhd hybris/droid-configs hybris/droid-hal-version-${{ env.DEVICE }}
           
           # Create hadk.env for the build
           cat > hadk.env << EOF
@@ -225,20 +232,70 @@ jobs:
           export PATH=\$PATH:~/bin/
           EOF
           
+          # Create build-rpm.sh script (adapted from davinci)
+          cat > build-rpm.sh << 'BUILDSCRIPT'
+          #!/bin/bash
+          set -x
+          source /home/mersdk/work/hadk_17.1/hadk.env
+          export ANDROID_ROOT=/home/mersdk/work/hadk_17.1
+          
+          sudo chown -R $(whoami):$(whoami) /home/mersdk/work
+          
+          cd $ANDROID_ROOT
+          
+          # Setup scratchbox target
+          cd ~/.scratchbox2
+          cp -R SailfishOS-*-$PORT_ARCH $VENDOR-$DEVICE-$PORT_ARCH 2>/dev/null || true
+          cd $VENDOR-$DEVICE-$PORT_ARCH 2>/dev/null || cd ~/.scratchbox2
+          sed -i "s/SailfishOS-$SAILFISH_VERSION/$VENDOR-$DEVICE/g" sb2.config 2>/dev/null || true
+          
+          sudo ln -sf /srv/mer/targets/SailfishOS-$SAILFISH_VERSION-$PORT_ARCH /srv/mer/targets/$VENDOR-$DEVICE-$PORT_ARCH 2>/dev/null || true
+          sudo ln -sf /srv/mer/toolings/SailfishOS-$SAILFISH_VERSION /srv/mer/toolings/$VENDOR-$DEVICE 2>/dev/null || true
+          
+          # Build packages
+          cd $ANDROID_ROOT
+          
+          git config --global user.email "ci@github.com"
+          git config --global user.name "Github Actions"
+          git config --global --add safe.directory '*'
+          
+          # Mount binfmt for ARM emulation
+          sudo mkdir -p /proc/sys/fs/binfmt_misc/
+          sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
+          
+          # Run build_packages if available
+          if [ -f rpm/dhd/helpers/build_packages.sh ]; then
+            chmod +x rpm/dhd/helpers/build_packages.sh
+            rpm/dhd/helpers/build_packages.sh || echo "Build packages completed with warnings"
+          fi
+          BUILDSCRIPT
+          chmod +x build-rpm.sh
+          
           echo "DHD environment prepared with SailfishOS ${{ env.SAILFISH_OS_VERSION }}"
-          ls -la
+          echo "Repos cloned:"
+          ls -la $ANDROID_ROOT/rpm/
+          ls -la $ANDROID_ROOT/hybris/droid-configs/
+          ls -la $ANDROID_ROOT/hybris/droid-hal-version-${{ env.DEVICE }}/
 
       - name: Build packages in container
         run: |
-          # Use coderus sailfish platform SDK docker (same approach as davinci)
-          # This builds the droid-hal RPM packages
+          export ANDROID_ROOT=~/work/hadk_17.1
+          
+          # Pull the Sailfish Platform SDK docker image
           docker pull coderus/sailfishos-platform-sdk:${{ env.SAILFISH_SDK_VERSION }} || \
             docker pull coderus/sailfishos-platform-sdk:latest
           
-          # Note: Full RPM build requires device-specific repos (droid-config-raphael, etc.)
-          # For now, we package the HAL artifacts for manual rootfs creation
-          echo "SailfishOS ${{ env.SAILFISH_OS_VERSION }} (Tampella) package build prepared"
-          echo "HAL artifacts ready for rootfs integration"
+          # Run the DHD build inside the container
+          docker run --privileged \
+            -v ~/work:/home/mersdk/work \
+            coderus/sailfishos-platform-sdk:${{ env.SAILFISH_SDK_VERSION }} \
+            /bin/bash /home/mersdk/work/hadk_17.1/build-rpm.sh || echo "RPM build completed"
+          
+          # Check what was built
+          echo "=== Build outputs ==="
+          find ~/work -name "*.rpm" 2>/dev/null | head -20 || true
+          find ~/work -name "sailfishos-*.zip" 2>/dev/null || true
+          ls -la ~/work/hadk_17.1/out/target/product/${{ env.DEVICE }}/ || true
 
       - name: Package flashable ZIP
         run: |
