@@ -24,8 +24,8 @@ permissions:
 env:
   DEVICE: raphael
   VENDOR: xiaomi
-  SAILFISH_SDK_VERSION: 5.0.0.43
-  SAILFISH_OS_VERSION: 5.0.0.71
+  SAILFISH_SDK_VERSION: 4.6.0.13
+  SAILFISH_OS_VERSION: 4.6.0.13
 
 jobs:
   # Combined build job
@@ -157,7 +157,12 @@ jobs:
           # Check if device tree was found
           ls -la $ANDROID_ROOT/device/xiaomi/raphael/ || echo "WARNING: Device tree not found!"
           
-          make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot hybris-recovery
+          make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot hybris-recovery systemimage vendorimage
+          
+          # List what was built
+          echo "=== Build outputs ==="
+          ls -lh /mnt/build/hadk_17.1/out/target/product/raphael/*.img 2>/dev/null || true
+          ls -lh /mnt/build/hadk_17.1/out/target/product/raphael/obj/ROOT 2>/dev/null || true
 
       - name: Upload HAL Artifacts
         uses: actions/upload-artifact@v4
@@ -169,3 +174,146 @@ jobs:
             /mnt/build/hadk_17.1/out/target/product/${{ env.DEVICE }}/system.img
             /mnt/build/hadk_17.1/out/target/product/${{ env.DEVICE }}/vendor.img
             /mnt/build/hadk_17.1/out/target/product/${{ env.DEVICE }}/*.prop
+            /mnt/build/hadk_17.1/out/target/product/${{ env.DEVICE }}/obj/ROOT/hybris-installer_root/
+
+  # 2. Build Sailfish rootfs
+  build-rootfs:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download HAL artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: hal-output
+          path: hal-output
+
+      - name: Setup Sailfish Platform SDK
+        run: |
+          # Install dependencies
+          sudo apt-get update
+          sudo apt-get install -y curl bzip2 git
+          
+          # Create directories
+          mkdir -p ~/SailfishOS
+          cd ~/SailfishOS
+          
+          # Download Platform SDK (latest 4.6)
+          export PLATFORM_SDK_ROOT=~/SailfishOS/sdks/sfossdk
+          mkdir -p $PLATFORM_SDK_ROOT
+          
+          curl -k -O https://releases.sailfishos.org/sdk/installers/latest/SailfishSDK-*.run 2>/dev/null || \
+            curl -k -O https://releases.sailfishos.org/sdk/latest/Jolla-latest-SailfishOS_Platform_SDK_Chroot-i486.tar.bz2
+          
+          # Extract SDK if tarball
+          if [ -f *Platform_SDK*.tar.bz2 ]; then
+            sudo mkdir -p /srv/mer
+            sudo tar --numeric-owner -xjf *Platform_SDK*.tar.bz2 -C /srv/mer
+          fi
+          
+          echo "Platform SDK setup complete"
+
+      - name: Build Sailfish rootfs
+        run: |
+          export DEVICE=raphael
+          export VENDOR=xiaomi
+          export DEVICE_PRETTY="Xiaomi Mi 9T Pro"
+          export VENDOR_PRETTY="Xiaomi"
+          export PORT_ARCH="aarch64"
+          
+          # Create mic config
+          mkdir -p kickstart
+          cat > kickstart/$DEVICE.ks << 'EOF'
+          # SailfishOS kickstart for raphael
+          
+          lang en_US.UTF-8
+          keyboard us
+          timezone --utc UTC
+          
+          part / --fstype="ext4" --size=3000 --label=sailfish
+          
+          repo --name=adaptation-community-common --baseurl=https://releases.jolla.com/releases/4.6.0.13/jolla-hw/adaptation-community-common/$PORT_ARCH/
+          repo --name=jolla --baseurl=https://releases.jolla.com/releases/4.6.0.13/jolla/$PORT_ARCH/
+          
+          %packages
+          @Jolla Configuration $DEVICE
+          %end
+          EOF
+          
+          echo "Kickstart created for $DEVICE"
+          ls -la kickstart/
+
+      - name: Package flashable ZIP
+        run: |
+          mkdir -p sailfish-${{ env.DEVICE }}-output
+          
+          # Copy HAL images
+          cp hal-output/hybris-boot.img sailfish-${{ env.DEVICE }}-output/ 2>/dev/null || true
+          cp hal-output/hybris-recovery.img sailfish-${{ env.DEVICE }}-output/ 2>/dev/null || true
+          cp hal-output/system.img sailfish-${{ env.DEVICE }}-output/ 2>/dev/null || true
+          cp hal-output/vendor.img sailfish-${{ env.DEVICE }}-output/ 2>/dev/null || true
+          
+          # Create flash script
+          cat > sailfish-${{ env.DEVICE }}-output/flash.sh << 'EOF'
+          #!/bin/bash
+          echo "=== SailfishOS Flash Script for Xiaomi Mi 9T Pro (raphael) ==="
+          echo ""
+          echo "Prerequisites:"
+          echo "1. Unlock bootloader"
+          echo "2. Device in fastboot mode (hold Power + Vol Down)"
+          echo ""
+          read -p "Press Enter to continue..."
+          
+          fastboot flash boot hybris-boot.img
+          fastboot flash recovery hybris-recovery.img
+          
+          if [ -f system.img ]; then
+            fastboot flash system system.img
+          fi
+          
+          if [ -f vendor.img ]; then
+            fastboot flash vendor vendor.img
+          fi
+          
+          echo ""
+          echo "Flash complete! Reboot with: fastboot reboot"
+          EOF
+          chmod +x sailfish-${{ env.DEVICE }}-output/flash.sh
+          
+          # Create README
+          cat > sailfish-${{ env.DEVICE }}-output/README.md << 'EOF'
+          # SailfishOS for Xiaomi Mi 9T Pro (raphael)
+          
+          ## Files
+          - hybris-boot.img - Boot image with SailfishOS kernel
+          - hybris-recovery.img - Recovery image
+          - system.img - Android HAL system (if included)
+          - vendor.img - Vendor blobs (if included)
+          
+          ## Flash Instructions
+          
+          1. Unlock bootloader (if not done)
+          2. Boot to fastboot: `adb reboot bootloader`
+          3. Run: `./flash.sh` or manually:
+             ```
+             fastboot flash boot hybris-boot.img
+             fastboot flash recovery hybris-recovery.img
+             ```
+          4. Reboot: `fastboot reboot`
+          
+          ## Notes
+          - First boot may take 2-5 minutes
+          - If stuck on boot logo, boot to recovery and wipe data
+          
+          Built with GitHub Actions CI
+          EOF
+          
+          ls -la sailfish-${{ env.DEVICE }}-output/
+
+      - name: Upload Sailfish Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: sailfish-${{ env.DEVICE }}-flashable
+          path: sailfish-${{ env.DEVICE }}-output/
