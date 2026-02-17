@@ -1,15 +1,16 @@
-# SailfishOS for Xiaomi Mi 9T Pro (raphael)
+# SailfishOS 5.0.0.43 (Tampella) for Xiaomi Mi 9T Pro (raphael)
 
 CI-based build system for porting SailfishOS to the Xiaomi Mi 9T Pro (codename: raphael).
 
-Based on the [sailfish-on-davinci](https://github.com/nicknisi/ci) approach.
+Based on the [sailfish-on-davinci](https://github.com/sailfish-on-davinci/ci) approach.
 
 ## Device Info
 
 - **Device**: Xiaomi Mi 9T Pro (also known as Redmi K20 Pro)
 - **Codename**: raphael / raphaelin
 - **SoC**: Qualcomm SM8150 (Snapdragon 855)
-- **Android Base**: hybris-16.0 (LineageOS 16.0 / Android 9)
+- **Android Base**: hybris-17.1 (Android 10)
+- **SailfishOS Target**: 5.0.0.43 (Tampella)
 
 ## Setup Instructions
 
