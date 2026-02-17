@@ -121,6 +121,27 @@ jobs:
           # Fix missing metalava directory
           mkdir -p $ANDROID_ROOT/tools/metalava/manual
 
+          # Fix WfdCommon missing dex jar - remove WFD references that we don't need
+          find $ANDROID_ROOT/device/xiaomi -name "*.mk" -exec sed -i 's/WfdCommon//g' {} \; 2>/dev/null || true
+          find $ANDROID_ROOT/device/xiaomi -name "*.mk" -exec sed -i '/wfd/d' {} \; 2>/dev/null || true
+          find $ANDROID_ROOT/vendor/xiaomi -name "*.mk" -exec sed -i 's/WfdCommon//g' {} \; 2>/dev/null || true
+          
+          # Remove problematic WFD packages from device.mk
+          sed -i '/WfdCommon/d' $ANDROID_ROOT/device/xiaomi/raphael/device.mk 2>/dev/null || true
+          sed -i '/WfdCommon/d' $ANDROID_ROOT/device/xiaomi/sm8150-common/common.mk 2>/dev/null || true
+          sed -i '/WfdCommon/d' $ANDROID_ROOT/device/xiaomi/sm8150-common/device.mk 2>/dev/null || true
+          
+          # Also remove from Android.bp files
+          find $ANDROID_ROOT/device/xiaomi -name "Android.bp" -exec sed -i '/WfdCommon/d' {} \; 2>/dev/null || true
+          find $ANDROID_ROOT/vendor/xiaomi -name "Android.bp" -exec sed -i '/WfdCommon/d' {} \; 2>/dev/null || true
+          
+          # Search and remove WfdCommon from all possible locations
+          grep -r "WfdCommon" $ANDROID_ROOT/device/ $ANDROID_ROOT/vendor/ $ANDROID_ROOT/hardware/ 2>/dev/null | head -20 || true
+          find $ANDROID_ROOT -name "*.bp" -exec grep -l "WfdCommon" {} \; 2>/dev/null | while read f; do
+            echo "Removing WfdCommon from $f"
+            sed -i '/WfdCommon/d' "$f"
+          done
+
           # Build
           cd $ANDROID_ROOT
           source build/envsetup.sh
