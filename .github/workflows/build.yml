@@ -143,6 +143,15 @@ jobs:
             sed -i '/WfdCommon/d' "$f"
           done
 
+          # Remove BluetoothQti - it depends on emailcommon which isn't built for hybris
+          # We use bluebinder instead for Bluetooth in SailfishOS
+          find $ANDROID_ROOT/device/xiaomi -name "*.mk" -exec sed -i '/BluetoothQti/d' {} \; 2>/dev/null || true
+          find $ANDROID_ROOT/vendor/xiaomi -name "*.mk" -exec sed -i '/BluetoothQti/d' {} \; 2>/dev/null || true
+          rm -rf $ANDROID_ROOT/vendor/qcom/opensource/commonsys/packages/apps/Bluetooth 2>/dev/null || true
+          
+          # Remove other problematic QC packages that have missing dependencies
+          find $ANDROID_ROOT -name "*.mk" -exec sed -i '/com.android.emailcommon/d' {} \; 2>/dev/null || true
+
           # Build
           cd $ANDROID_ROOT
           source build/envsetup.sh
