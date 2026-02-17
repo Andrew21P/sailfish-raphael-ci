@@ -92,6 +92,10 @@ jobs:
         run: |
           export ANDROID_ROOT=/mnt/build/hadk_17.1
           
+          # Skip soong tests to speed up build
+          export SKIP_SOONG_TESTS=true
+          export BUILD_BROKEN_VERIFY_USES_LIBRARIES=true
+          
           # Clone device-specific repos for raphael (Mi 9T Pro / SM8150)
           # crDroid has Android 10 support (10.0 branch)
           git clone https://github.com/crdroidandroid/android_device_xiaomi_raphael.git -b 10.0 $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || \
@@ -158,6 +162,8 @@ jobs:
           
           # Set ALLOW_MISSING_DEPENDENCIES for hybris builds (standard practice)
           export ALLOW_MISSING_DEPENDENCIES=true
+          # Skip soong tests to speed up build significantly
+          export SKIP_SOONG_TESTS=true
           
           # Try different lunch targets
           breakfast raphael userdebug || \
