@@ -142,24 +142,24 @@ jobs:
           
           # Clone device-specific repos for raphael (Mi 9T Pro / SM8150)
           # TODO: Replace with your forked repos once you upload them
-          git clone https://github.com/nicknisi/device_xiaomi_raphael.git $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || \
+          git clone https://github.com/Andrew21P/device_xiaomi_raphael.git $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || \
             git clone https://github.com/LineageOS/android_device_xiaomi_raphael.git -b lineage-16.0 $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || true
           
           # SM8150 common device tree
-          git clone https://github.com/nicknisi/device_xiaomi_sm8150-common.git $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 || \
+          git clone https://github.com/Andrew21P/device_xiaomi_sm8150-common.git $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 || \
             git clone https://github.com/LineageOS/android_device_xiaomi_sm8150-common.git -b lineage-16.0 $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 || true
           
           # Kernel - SM8150 (Snapdragon 855)
-          git clone https://github.com/nicknisi/kernel_xiaomi_sm8150.git $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 -b q-oss || \
+          git clone https://github.com/Andrew21P/kernel_xiaomi_sm8150.git $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 -b q-oss || \
             git clone https://github.com/LineageOS/android_kernel_xiaomi_sm8150.git -b lineage-16.0 $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 || true
           
           # Vendor blobs
-          git clone https://github.com/nicknisi/vendor_xiaomi_raphael.git $ANDROID_ROOT/vendor/xiaomi/raphael --depth=1 || \
+          git clone https://github.com/Andrew21P/vendor_xiaomi_raphael.git $ANDROID_ROOT/vendor/xiaomi/raphael --depth=1 || \
             git clone https://github.com/TheMuppets/proprietary_vendor_xiaomi.git $ANDROID_ROOT/vendor/xiaomi --depth=1 || true
           
           # Hybris boot with fixup-mountpoints for raphael
           rm -rf $ANDROID_ROOT/hybris/hybris-boot
-          git clone https://github.com/nicknisi/hybris-boot.git $ANDROID_ROOT/hybris/hybris-boot --depth=1 || \
+          git clone https://github.com/Andrew21P/hybris-boot.git $ANDROID_ROOT/hybris/hybris-boot --depth=1 || \
             git clone https://github.com/mer-hybris/hybris-boot.git -b master $ANDROID_ROOT/hybris/hybris-boot --depth=1
           
           # Copy our fixup-mountpoints with raphael support
