@@ -1,0 +1,11 @@
+# dconf vendor settings for Xiaomi Mi 9T Pro (raphael)
+# 6.39" AMOLED 1080x2340 @ 60Hz
+
+[lipstick]
+# Screen scaling for 1080p AMOLED
+screenPixelRatio=2.25
+
+[sailfish/camera]
+# Enable back and front cameras
+primaryCameraId=0
+secondarycameraId=1

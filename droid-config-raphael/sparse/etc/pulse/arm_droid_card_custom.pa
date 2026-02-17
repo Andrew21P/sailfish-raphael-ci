@@ -1,0 +1,14 @@
+# PulseAudio DROID card configuration for Xiaomi Mi 9T Pro (raphael)
+# Qualcomm SM8150 audio
+
+load-module module-droid-card-24 name="droid-card" rate=48000 mute_routing_before=23800 mute_routing_after=4000
+
+# Output devices
+load-module module-droid-sink sink_name=speaker
+load-module module-droid-sink sink_name=headphone
+
+# Input devices
+load-module module-droid-source source_name=primary
+
+# Audio routing control
+load-module module-droid-glue

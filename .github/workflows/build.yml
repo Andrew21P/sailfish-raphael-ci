@@ -1,333 +1,390 @@
+#=================================================
 # Sailfish OS CI Build for Xiaomi Mi 9T Pro (raphael)
 # Based on sailfish-on-davinci project structure
-# Uses hybris-18.1 (Android 11) for PixelExperience eleven branch compatibility
+# Uses hybris-18.1 (Android 11) for SM8150
+#=================================================
 
-name: Build Sailfish OS for raphael
+name: Build SailfishOS for raphael
 
-on:
+on: 
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
+    inputs:
+      name:
+        description: 'trigger to build'
+        required: true
+        default: 'run'
+
+permissions:
+  contents: write
 
 env:
-  SAILFISH_VERSION: "5.0.0.43"
-  DEVICE: "raphael"
-  VENDOR: "xiaomi"
-  HYBRIS_VERSION: "hybris-18.1"
-  
+  DEVICE: raphael
+  VENDOR: xiaomi
+  ANDROID_ROOT: /home/runner/work/sailfish-raphael-ci/sailfish-raphael-ci/hadk_18.1
+  SAILFISH_SDK_VERSION: 5.0.0.43
+  SAILFISH_OS_VERSION: 5.0.0.71
+
 jobs:
-  build-hal:
-    runs-on: ubuntu-latest
-    container:
-      image: coderus/sailfishos-platform-sdk:5.0.0.43
-      options: --privileged
-    
+  #=================================================
+  # Job 1: Sync Android sources and cache
+  #=================================================
+  prep-source:
+    runs-on: ubuntu-22.04
     steps:
-      - name: Install dependencies
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 20480
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-docker-images: 'true'
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Repo Tool & Source
+        id: cache-android
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/bin/repo
+            ${{ env.ANDROID_ROOT }}/.repo
+          key: ${{ runner.os }}-android-repo-hybris18-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-android-repo-hybris18-
+
+      - name: Download repo bin
+        run: |
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          git config --global user.email "ci@github.com"
+          git config --global user.name "Github Actions"
+
+      - name: Repo Sync hybris-18.1
+        run: |
+          mkdir -p $ANDROID_ROOT
+          cd $ANDROID_ROOT
+          python3 ~/bin/repo init -u https://github.com/AleGasMex/android.git -b hybris-18.1 --depth=1
+          python3 ~/bin/repo sync -j$(nproc --all) -c --no-clone-bundle --no-tags --optimized-fetch --prune
+
+  #=================================================
+  # Job 2: Build Android HAL
+  #=================================================
+  build-hal:
+    needs: prep-source
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 30720
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+          remove-docker-images: 'true'
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore Repo Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/bin/repo
+            ${{ env.ANDROID_ROOT }}/.repo
+          key: ${{ runner.os }}-android-repo-hybris18-${{ github.sha }}
+
+      - name: Prepare Environment & Build
         run: |
           sudo apt-get update
-          sudo apt-get install -y repo git curl wget python3 zip unzip bc \
-            bison flex gperf libxml2-utils zlib1g-dev gcc-multilib \
-            g++-multilib libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev \
-            libx11-dev lib32z-dev libgl1-mesa-dev libncurses5 rsync gettext \
-            openjdk-11-jdk kmod cpio python-is-python3 libssl-dev
+          sudo apt-get install -y \
+            openjdk-8-jdk android-tools-adb bc bison \
+            build-essential curl flex g++-multilib gcc-multilib gnupg gperf \
+            imagemagick lib32ncurses-dev lib32readline-dev lib32z1-dev \
+            liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev \
+            libxml2 libxml2-utils lzop pngcrush rsync schedtool \
+            squashfs-tools xsltproc yasm zip zlib1g-dev \
+            qemu-user-static qemu-system-arm e2fsprogs simg2img \
+            libtinfo5 libncurses5 gzip virtualenv git python2
 
-      - name: Configure git
-        run: |
-          git config --global user.email "ci@sailfishos.org"
-          git config --global user.name "Sailfish CI"
-          git config --global color.ui false
+          # Setup JDK
+          export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
+          export PATH=$JAVA_HOME/bin:$PATH
 
-      - name: Initialize repo
-        run: |
-          mkdir -p /hadk
-          cd /hadk
-          repo init -u https://github.com/AleGasMex/android.git -b ${{ env.HYBRIS_VERSION }} --depth=1
-          
-      - name: Sync AOSP/hybris base
-        run: |
-          cd /hadk
-          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
-          
-      - name: Clone device repositories
-        run: |
-          cd /hadk
-          
-          # Clone device tree
-          git clone --depth 1 -b eleven \
-            https://github.com/AleGasMex/device_xiaomi_raphael.git \
-            device/xiaomi/raphael
-          
-          # Clone SM8150 common tree
-          git clone --depth 1 -b eleven \
-            https://github.com/AleGasMex/device_xiaomi_sm8150-common.git \
-            device/xiaomi/sm8150-common || true
-          
-          # Clone kernel
-          git clone --depth 1 -b eleven \
-            https://github.com/AleGasMex/kernel_xiaomi_raphael.git \
-            kernel/xiaomi/raphael
-          
-          # Clone vendor blobs
-          git clone --depth 1 -b eleven \
-            https://github.com/AleGasMex/vendor_xiaomi_raphael.git \
-            vendor/xiaomi/raphael || true
-            
-          git clone --depth 1 -b eleven \
-            https://github.com/AleGasMex/vendor_xiaomi_sm8150-common.git \
-            vendor/xiaomi/sm8150-common || true
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          git config --global user.email "ci@github.com"
+          git config --global user.name "Github Actions"
+          git config --global --add safe.directory '*'
 
-      - name: Strip LineageOS dependencies from device tree
-        run: |
-          cd /hadk
-          
-          echo "=== Patching device tree to remove LineageOS dependencies ==="
-          
-          # Remove XiaomiParts from device.mk if present
-          if [ -f device/xiaomi/raphael/device.mk ]; then
-            sed -i '/XiaomiParts/d' device/xiaomi/raphael/device.mk
-            sed -i '/xiaomiparts/d' device/xiaomi/raphael/device.mk
-            sed -i '/XIAOMI_PARTS/d' device/xiaomi/raphael/device.mk
-            echo "Patched device.mk"
-          fi
-          
-          # Remove XiaomiParts from common device.mk
-          if [ -f device/xiaomi/sm8150-common/device.mk ]; then
-            sed -i '/XiaomiParts/d' device/xiaomi/sm8150-common/device.mk
-            sed -i '/xiaomiparts/d' device/xiaomi/sm8150-common/device.mk
-            echo "Patched sm8150-common/device.mk"
-          fi
-          
-          # Remove from Android.bp if exists
-          find device/xiaomi -name "Android.bp" -exec sed -i '/XiaomiParts/d' {} \;
-          find device/xiaomi -name "Android.bp" -exec sed -i '/xiaomi-parts/d' {} \;
-          
-          # Remove FOD (fingerprint on display) LineageOS dependencies
-          find device/xiaomi -name "*.mk" -exec sed -i '/vendor.lineage.biometrics.fingerprint.inscreen/d' {} \;
-          
-          # Remove LineageOS settings resources dependency
-          find device/xiaomi -name "Android.bp" -exec sed -i '/org.lineageos.settings.resources/d' {} \;
-          find device/xiaomi -name "Android.mk" -exec sed -i '/org.lineageos.settings.resources/d' {} \;
-          
-          # Remove LineageOS live display
-          find device/xiaomi -name "*.mk" -exec sed -i '/lineage.livedisplay/d' {} \;
-          find device/xiaomi -name "*.mk" -exec sed -i '/vendor.lineage/d' {} \;
-          
-          # Remove lineage trust
-          find device/xiaomi -name "*.mk" -exec sed -i '/lineage.trust/d' {} \;
-          
-          # Remove camera motor service (LineageOS specific)
-          find device/xiaomi -name "*.mk" -exec sed -i '/vendor.lineage.camera.motor/d' {} \;
-          
-          # Delete XiaomiParts directory entirely if it exists
-          rm -rf device/xiaomi/raphael/XiaomiParts 2>/dev/null || true
-          rm -rf device/xiaomi/sm8150-common/XiaomiParts 2>/dev/null || true
-          
-          # Remove TouchFeature if it has LineageOS deps
-          find device/xiaomi -name "*.mk" -exec sed -i '/TouchFeature/d' {} \;
-          
-          # Remove lineage overlays
-          find device/xiaomi -name "*.mk" -exec sed -i '/overlay-lineage/d' {} \;
-          
-          echo "=== Done patching device trees ==="
-          
-      - name: Add hybris fixup-mountpoints for raphael
-        run: |
-          cd /hadk
-          
-          # Check if fixup-mountpoints exists and add raphael entry
-          FIXUP_FILE="hybris/hybris-boot/fixup-mountpoints"
-          
+          # Restore from cache (local checkout only)
+          cd $ANDROID_ROOT
+          python3 ~/bin/repo sync -l
+
+          #------------------------------------------
+          # Clone device-specific repos for raphael
+          #------------------------------------------
+          # Device tree (PixelExperience eleven branch)
+          git clone https://github.com/AleGasMex/device_xiaomi_raphael.git \
+            $ANDROID_ROOT/device/xiaomi/raphael --depth=1 -b eleven || true
+
+          # SM8150 common tree
+          git clone https://github.com/AleGasMex/device_xiaomi_sm8150-common.git \
+            $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 -b eleven || true
+
+          # Kernel
+          git clone https://github.com/AleGasMex/kernel_xiaomi_raphael.git \
+            $ANDROID_ROOT/kernel/xiaomi/raphael --depth=1 -b eleven || true
+
+          # Vendor blobs
+          git clone https://github.com/AleGasMex/vendor_xiaomi_raphael.git \
+            $ANDROID_ROOT/vendor/xiaomi/raphael --depth=1 -b eleven || true
+          git clone https://github.com/AleGasMex/vendor_xiaomi_sm8150-common.git \
+            $ANDROID_ROOT/vendor/xiaomi/sm8150-common --depth=1 -b eleven || true
+
+          # Hardware Xiaomi
+          git clone https://github.com/LineageOS/android_hardware_xiaomi.git \
+            -b lineage-18.1 $ANDROID_ROOT/hardware/xiaomi --depth=1 --single-branch || true
+
+          #------------------------------------------
+          # Replace hybris-boot with fixup-mountpoints
+          #------------------------------------------
+          rm -rf $ANDROID_ROOT/hybris/hybris-boot || true
+          git clone https://github.com/AleGasMex/hybris-boot.git \
+            -b hybris-18.1-raphael $ANDROID_ROOT/hybris/hybris-boot --depth=1 || \
+          git clone https://github.com/AleGasMex/hybris-boot.git \
+            $ANDROID_ROOT/hybris/hybris-boot --depth=1
+
+          #------------------------------------------
+          # Inject raphael fixup-mountpoints
+          #------------------------------------------
+          FIXUP_FILE="$ANDROID_ROOT/hybris/hybris-boot/fixup-mountpoints"
           if [ -f "$FIXUP_FILE" ] && ! grep -q '"raphael"' "$FIXUP_FILE"; then
-            # Find the line before "*)    cat <<EOF"
-            # and insert raphael fixups there
-            
-            # Create raphael fixup block
-            # VERIFIED partition mappings from actual device (2026-02-17)
             cat >> /tmp/raphael_fixups.txt << 'RAPHAEL_EOF'
     "raphael"|"raphaelin")
+        # Xiaomi Mi 9T Pro - SM8150 - Verified 2025-02-17
         sed -i \
-            -e 's block/bootdevice/by-name/abl sde35 ' \
-            -e 's block/bootdevice/by-name/ablbak sde36 ' \
-            -e 's block/bootdevice/by-name/aop sde15 ' \
-            -e 's block/bootdevice/by-name/aopbak sde16 ' \
-            -e 's block/bootdevice/by-name/apdp sde8 ' \
-            -e 's block/bootdevice/by-name/bluetooth sde26 ' \
             -e 's block/bootdevice/by-name/boot sde49 ' \
-            -e 's block/bootdevice/by-name/cache sda29 ' \
-            -e 's block/bootdevice/by-name/catecontentfv sde28 ' \
-            -e 's block/bootdevice/by-name/catefv sde18 ' \
-            -e 's block/bootdevice/by-name/cateloader sde31 ' \
-            -e 's block/bootdevice/by-name/cdt sdd2 ' \
-            -e 's block/bootdevice/by-name/cmnlib sde19 ' \
-            -e 's block/bootdevice/by-name/cmnlib64 sde21 ' \
-            -e 's block/bootdevice/by-name/cmnlib64bak sde22 ' \
-            -e 's block/bootdevice/by-name/cmnlibbak sde20 ' \
-            -e 's block/bootdevice/by-name/core_nhlos sde51 ' \
-            -e 's block/bootdevice/by-name/cust sda30 ' \
-            -e 's block/bootdevice/by-name/dbg sda3 ' \
-            -e 's block/bootdevice/by-name/ddr sdd4 ' \
-            -e 's block/bootdevice/by-name/devcfg sde13 ' \
-            -e 's block/bootdevice/by-name/devcfgbak sde14 ' \
-            -e 's block/bootdevice/by-name/devinfo sda17 ' \
-            -e 's block/bootdevice/by-name/dip sde27 ' \
-            -e 's block/bootdevice/by-name/dsp sde48 ' \
+            -e 's block/bootdevice/by-name/recovery sda28 ' \
             -e 's block/bootdevice/by-name/dtbo sde45 ' \
-            -e 's block/bootdevice/by-name/frp sda9 ' \
-            -e 's block/bootdevice/by-name/fsc sdf1 ' \
-            -e 's block/bootdevice/by-name/fsg sde40 ' \
-            -e 's block/bootdevice/by-name/gsort sde44 ' \
-            -e 's block/bootdevice/by-name/hyp sde42 ' \
-            -e 's block/bootdevice/by-name/hypbak sde43 ' \
-            -e 's block/bootdevice/by-name/ifaa sde46 ' \
-            -e 's block/bootdevice/by-name/imagefv sdf4 ' \
-            -e 's block/bootdevice/by-name/keymaster sde24 ' \
-            -e 's block/bootdevice/by-name/keymasterbak sde25 ' \
-            -e 's block/bootdevice/by-name/keystore sda8 ' \
-            -e 's block/bootdevice/by-name/limits sde4 ' \
-            -e 's block/bootdevice/by-name/logdump sda25 ' \
-            -e 's block/bootdevice/by-name/logfs sda14 ' \
-            -e 's block/bootdevice/by-name/logo sde47 ' \
-            -e 's block/bootdevice/by-name/metadata sda19 ' \
-            -e 's block/by-name/metadata sda19 ' \
-            -e 's block/bootdevice/by-name/minidump sda26 ' \
+            -e 's block/bootdevice/by-name/system sde54 ' \
+            -e 's block/bootdevice/by-name/vendor sde53 ' \
+            -e 's block/bootdevice/by-name/userdata sda31 ' \
+            -e 's block/bootdevice/by-name/cache sda29 ' \
+            -e 's block/bootdevice/by-name/persist sda23 ' \
             -e 's block/bootdevice/by-name/misc sda11 ' \
             -e 's block/bootdevice/by-name/modem sde52 ' \
-            -e 's block/bootdevice/by-name/modemst1 sdf5 ' \
-            -e 's block/bootdevice/by-name/modemst2 sdf6 ' \
-            -e 's block/bootdevice/by-name/msadp sde9 ' \
-            -e 's block/bootdevice/by-name/multiimgoem sde1 ' \
-            -e 's block/bootdevice/by-name/multiimgqti sde2 ' \
-            -e 's block/bootdevice/by-name/oem_misc1 sda18 ' \
-            -e 's block/bootdevice/by-name/oops sda16 ' \
-            -e 's block/bootdevice/by-name/persist sda23 ' \
-            -e 's block/bootdevice/by-name/persistbak sda24 ' \
-            -e 's block/bootdevice/by-name/qupfw sde6 ' \
-            -e 's block/bootdevice/by-name/qupfwbak sde7 ' \
-            -e 's block/bootdevice/by-name/rawdump sda27 ' \
-            -e 's block/bootdevice/by-name/recovery sda28 ' \
-            -e 's block/bootdevice/by-name/secdata sde3 ' \
-            -e 's block/bootdevice/by-name/splash sda21 ' \
-            -e 's block/bootdevice/by-name/spunvm sde41 ' \
-            -e 's block/bootdevice/by-name/ssd sda2 ' \
-            -e 's block/bootdevice/by-name/storsec sde11 ' \
-            -e 's block/bootdevice/by-name/switch sda1 ' \
-            -e 's block/bootdevice/by-name/system sde54 ' \
-            -e 's block/bootdevice/by-name/toolsfv sde34 ' \
-            -e 's block/bootdevice/by-name/tz sde37 ' \
-            -e 's block/bootdevice/by-name/tzbak sde38 ' \
-            -e 's block/bootdevice/by-name/uefisecapp sde32 ' \
-            -e 's block/bootdevice/by-name/uefisecappbak sde33 ' \
-            -e 's block/bootdevice/by-name/uefivarstore sde17 ' \
-            -e 's block/bootdevice/by-name/userdata sda31 ' \
+            -e 's block/bootdevice/by-name/dsp sde48 ' \
+            -e 's block/bootdevice/by-name/bluetooth sde26 ' \
             -e 's block/bootdevice/by-name/vbmeta sde10 ' \
-            -e 's block/bootdevice/by-name/vendor sde53 ' \
-            -e 's block/bootdevice/by-name/vm-data sda12 ' \
+            -e 's block/bootdevice/by-name/vbmeta_system sde47 ' \
+            -e 's block/bootdevice/by-name/abl sde17 ' \
             -e 's block/bootdevice/by-name/xbl sdb2 ' \
             -e 's block/bootdevice/by-name/xbl_config sdb1 ' \
-            -e 's block/bootdevice/by-name/xbl_configbak sdc1 ' \
-            -e 's block/bootdevice/by-name/xblbak sdc2 ' \
+            -e 's block/bootdevice/by-name/tz sde19 ' \
+            -e 's block/bootdevice/by-name/hyp sde21 ' \
+            -e 's block/bootdevice/by-name/keymaster sde31 ' \
+            -e 's block/bootdevice/by-name/cmnlib sde27 ' \
+            -e 's block/bootdevice/by-name/cmnlib64 sde29 ' \
+            -e 's block/bootdevice/by-name/devcfg sde33 ' \
+            -e 's block/bootdevice/by-name/qupfw sde35 ' \
+            -e 's block/bootdevice/by-name/storsec sde37 ' \
+            -e 's block/bootdevice/by-name/modemst1 sdf2 ' \
+            -e 's block/bootdevice/by-name/modemst2 sdf3 ' \
+            -e 's block/bootdevice/by-name/fsc sdf5 ' \
+            -e 's block/bootdevice/by-name/fsg sdf1 ' \
+            -e 's block/bootdevice/by-name/aop sde11 ' \
+            -e 's block/bootdevice/by-name/cust sda30 ' \
+            -e 's block/bootdevice/by-name/logo sde46 ' \
+            -e 's block/bootdevice/by-name/splash sda19 ' \
+            -e 's block/bootdevice/by-name/keystore sda20 ' \
+            -e 's block/bootdevice/by-name/frp sda21 ' \
+            -e 's block/bootdevice/by-name/logfs sda18 ' \
+            -e 's block/bootdevice/by-name/devinfo sda7 ' \
+            -e 's block/bootdevice/by-name/product sde55 ' \
+            -e 's block/bootdevice/by-name/metadata sda19 ' \
+            -e 's block/by-name/metadata sda19 ' \
             "$@"
         ;;
 
 RAPHAEL_EOF
-
-            # Insert before the catch-all case
-            sed -i '/^\s*\*)/e cat /tmp/raphael_fixups.txt' "$FIXUP_FILE" || {
-              # If sed -e doesn't work, try appending before last esac
+            # Insert before *)
+            sed -i '/^[[:space:]]*\*)$/e cat /tmp/raphael_fixups.txt' "$FIXUP_FILE" || {
               head -n -20 "$FIXUP_FILE" > /tmp/fixup_temp
               cat /tmp/raphael_fixups.txt >> /tmp/fixup_temp
               tail -20 "$FIXUP_FILE" >> /tmp/fixup_temp
               mv /tmp/fixup_temp "$FIXUP_FILE"
             }
-            
             echo "Added raphael to fixup-mountpoints"
-          else
-            echo "Either fixup-mountpoints not found or raphael already present"
           fi
 
-      - name: Setup build environment
-        run: |
-          cd /hadk
-          
-          # Create hadk.env
-          cat > hadk.env << EOF
-          export MER_ROOT=/parentroot/srv/mer
-          export ANDROID_ROOT=/hadk
-          export PORT_ARCH=aarch64
-          export VENDOR=${{ env.VENDOR }}
-          export DEVICE=${{ env.DEVICE }}
-          export HABUILD_PKG=droid-hal-${{ env.DEVICE }}
-          export HYBRIS_VERSION=${{ env.HYBRIS_VERSION }}
-          EOF
-          
-          source hadk.env
-          
-      - name: Patch product config for hybris
-        run: |
-          cd /hadk
-          
-          # Create minimal product config if needed
-          mkdir -p device/xiaomi/raphael
-          
-          # Create minimal AndroidProducts.mk
-          cat > device/xiaomi/raphael/AndroidProducts.mk << 'EOF'
-          PRODUCT_MAKEFILES := \
-              $(LOCAL_DIR)/aosp_raphael.mk
-          
-          COMMON_LUNCH_CHOICES := \
-              aosp_raphael-userdebug \
-              aosp_raphael-eng
-          EOF
-          
-          # Create minimal product makefile
-          cat > device/xiaomi/raphael/aosp_raphael.mk << 'EOF'
-          $(call inherit-product, device/xiaomi/raphael/device.mk)
-          $(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)
-          
-          PRODUCT_NAME := aosp_raphael
-          PRODUCT_DEVICE := raphael
-          PRODUCT_BRAND := Xiaomi
-          PRODUCT_MODEL := Mi 9T Pro
-          PRODUCT_MANUFACTURER := Xiaomi
-          EOF
+          #------------------------------------------
+          # Strip LineageOS dependencies
+          #------------------------------------------
+          find device/xiaomi -name "*.mk" -exec sed -i \
+            -e '/XiaomiParts/d' \
+            -e '/vendor.lineage/d' \
+            -e '/lineage.livedisplay/d' \
+            -e '/lineage.trust/d' \
+            -e '/TouchFeature/d' \
+            -e '/overlay-lineage/d' {} \; || true
 
-      - name: Build hybris-hal
-        run: |
-          cd /hadk
-          source hadk.env
-          source build/envsetup.sh
-          
-          # Try building with lunch
-          lunch aosp_${{ env.DEVICE }}-userdebug || lunch lineage_${{ env.DEVICE }}-userdebug || true
-          
+          rm -rf device/xiaomi/raphael/XiaomiParts || true
+          rm -rf device/xiaomi/sm8150-common/XiaomiParts || true
+
+          #------------------------------------------
+          # Clone droidmedia
+          #------------------------------------------
+          rm -rf external/droidmedia || true
+          git clone --recurse-submodules https://github.com/AleGasMex/droidmedia.git external/droidmedia
+          cd external/droidmedia
+          git checkout 0.20230605.1 || true
+          echo 'MINIMEDIA_AUDIOPOLICYSERVICE_ENABLE := 1' > env.mk
+          echo 'AUDIOPOLICYSERVICE_ENABLE := 1' >> env.mk
+
+          #------------------------------------------
+          # Clone libhybris
+          #------------------------------------------
+          cd $ANDROID_ROOT/external
+          rm -rf libhybris || true
+          git clone --recurse-submodules https://github.com/AleGasMex/libhybris.git
+
+          #------------------------------------------
+          # Apply hybris-patches
+          #------------------------------------------
+          cd $ANDROID_ROOT
+          hybris-patches/apply-patches.sh --mb || true
+
+          #------------------------------------------
           # Build HAL
-          make -j$(nproc) hybris-hal || {
-            echo "Build failed, trying minimal build..."
-            make -j$(nproc) bootimage
-          }
-          
-      - name: Upload build artifacts  
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: hybris-hal-raphael
-          path: |
-            /hadk/out/target/product/raphael/boot.img
-            /hadk/out/target/product/raphael/system.img
-            /hadk/out/target/product/raphael/hybris-boot.img
-            /hadk/out/target/product/raphael/*.zip
-          retention-days: 7
+          #------------------------------------------
+          sudo ln -sf /usr/bin/python2.7 /usr/bin/python || true
+          source build/envsetup.sh 2>&1
+          breakfast $DEVICE || lunch aosp_${DEVICE}-userdebug || true
 
-      - name: Upload logs on failure
+          # Free space
+          rm -rf .repo || true
+
+          make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot
+
+      - name: Upload HAL Artifacts
         uses: actions/upload-artifact@v4
-        if: failure()
         with:
-          name: build-logs-raphael
+          name: hal-output
           path: |
-            /hadk/out/error.log
-            /hadk/out/.ninja_log
-            /hadk/out/verbose.log.gz
-          retention-days: 3
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/hybris-boot.img
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/droidmedia*.tgz
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/obj/PACKAGING/
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/system/
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/root/
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/recovery/
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/*.img
+          retention-days: 14
+
+  #=================================================
+  # Job 3: Build DHD (RPM packages)
+  #=================================================
+  build-dhd:
+    needs: build-hal
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download HAL Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: hal-output
+          path: ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/
+
+      - name: Build DHD in Docker container
+        run: |
+          cd $ANDROID_ROOT
+          rm -rf .repo || true
+
+          #------------------------------------------
+          # Clone RPM packaging repos
+          #------------------------------------------
+          git clone https://github.com/sailfish-on-ginkgo/hybris-installer.git \
+            $ANDROID_ROOT/hybris/hybris-installer || true
+
+          git clone --recurse-submodules \
+            https://github.com/${{ github.repository_owner }}/droid-hal-raphael.git \
+            $ANDROID_ROOT/rpm --depth=1 || \
+          git clone --recurse-submodules \
+            https://github.com/AleGasMex/droid-hal-raphael.git \
+            $ANDROID_ROOT/rpm --depth=1
+
+          git clone --recurse-submodules \
+            https://github.com/${{ github.repository_owner }}/droid-config-raphael.git \
+            $ANDROID_ROOT/hybris/droid-configs --depth=1 || \
+          git clone --recurse-submodules \
+            https://github.com/AleGasMex/droid-config-raphael.git \
+            $ANDROID_ROOT/hybris/droid-configs --depth=1
+
+          git clone --recurse-submodules \
+            https://github.com/${{ github.repository_owner }}/droid-hal-version-raphael.git \
+            $ANDROID_ROOT/hybris/droid-hal-version-raphael --depth=1 || \
+          git clone --recurse-submodules \
+            https://github.com/AleGasMex/droid-hal-version-raphael.git \
+            $ANDROID_ROOT/hybris/droid-hal-version-raphael --depth=1
+
+          #------------------------------------------
+          # Setup Docker workspace
+          #------------------------------------------
+          sudo mkdir -p /home/runner/work/sailfish-raphael-ci/sailfish-raphael-ci/docker
+
+          #------------------------------------------
+          # Copy helpers scripts
+          #------------------------------------------
+          cd ${{ github.workspace }}
+          chmod +x build-rpm.sh || true
+          chmod +x helpers/*.sh || true
+
+          #------------------------------------------
+          # Run DHD build in Docker
+          #------------------------------------------
+          sudo docker run --privileged \
+            -v /home/runner/work:/home/mersdk/work \
+            coderus/sailfishos-platform-sdk:$SAILFISH_SDK_VERSION \
+            /bin/sh /home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci/build-rpm.sh
+
+      - name: Upload SailfishOS ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: sailfishos-zip
+          path: ${{ env.ANDROID_ROOT }}/SailfishOScommunity-release-*/sailfishos-*.zip
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ env.ANDROID_ROOT }}/SailfishOScommunity-release-*/sailfishos-*-${{ env.DEVICE }}*.zip

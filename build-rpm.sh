@@ -2,10 +2,10 @@
 
 set -x
 
-source /home/mersdk/work/ci/ci/hadk.env
-export ANDROID_ROOT=/home/mersdk/work/ci/ci/hadk_17.1
+source /home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci/hadk.env
+export ANDROID_ROOT=/home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci/hadk_18.1
 
-sudo chown -R $(whoami):$(whoami) /home/mersdk/work/ci/ci
+sudo chown -R $(whoami):$(whoami) /home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci
 cd $ANDROID_ROOT
 
 cd ~/.scratchbox2
@@ -23,20 +23,20 @@ sdk-assistant list
 cd $ANDROID_ROOT
 
 # Remove kernel config check that requires full kernel source
-sed -i '/mer_verify_kernel_config/,/\.config$/d' rpm/dhd/droid-hal-device.inc
-sed -i 's/echo Verifying kernel config/echo "SKIPPING kernel config check"/' rpm/dhd/droid-hal-device.inc
+sed -i '/mer_verify_kernel_config/,/\.config$/d' rpm/dhd/droid-hal-device.inc || true
+sed -i 's/echo Verifying kernel config/echo "SKIPPING kernel config check"/' rpm/dhd/droid-hal-device.inc || true
 
 sb2 -t $VENDOR-$DEVICE-$PORT_ARCH -m sdk-install -R zypper in -y ccache python
 sudo zypper in -y python
 
 # dhd hack - use custom helpers
 cd $ANDROID_ROOT
-cp /home/mersdk/work/ci/ci/helpers/*.sh rpm/dhd/helpers/
-chmod +x rpm/dhd/helpers/*.sh
+cp /home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci/helpers/*.sh rpm/dhd/helpers/ || true
+chmod +x rpm/dhd/helpers/*.sh || true
 
 git config --global user.email "ci@github.com"
 git config --global user.name "Github Actions"
-git config --global --add safe.directory /home/mersdk/work/ci/ci
+git config --global --add safe.directory /home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci
 
 cd $ANDROID_ROOT
 sudo mkdir -p /proc/sys/fs/binfmt_misc/

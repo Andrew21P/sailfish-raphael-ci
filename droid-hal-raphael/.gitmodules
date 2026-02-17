@@ -1,0 +1,3 @@
+[submodule "rpm/dhd"]
+	path = rpm/dhd
+	url = https://github.com/mer-hybris/droid-hal-device.git

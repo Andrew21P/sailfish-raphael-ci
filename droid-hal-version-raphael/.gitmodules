@@ -1,0 +1,3 @@
+[submodule "rpm/droid-hal-version"]
+	path = rpm/droid-hal-version
+	url = https://github.com/mer-hybris/droid-hal-version.git
