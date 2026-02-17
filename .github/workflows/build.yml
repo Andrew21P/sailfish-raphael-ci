@@ -207,54 +207,56 @@ jobs:
           #------------------------------------------
           FIXUP_FILE="$ANDROID_ROOT/hybris/hybris-boot/fixup-mountpoints"
           if [ -f "$FIXUP_FILE" ] && ! grep -q '"raphael"' "$FIXUP_FILE"; then
-            cat >> /tmp/raphael_fixups.txt << 'RAPHAEL_EOF'
-    "raphael"|"raphaelin")
-        # Xiaomi Mi 9T Pro - SM8150 - Verified 2025-02-17
-        sed -i \
-            -e 's block/bootdevice/by-name/boot sde49 ' \
-            -e 's block/bootdevice/by-name/recovery sda28 ' \
-            -e 's block/bootdevice/by-name/dtbo sde45 ' \
-            -e 's block/bootdevice/by-name/system sde54 ' \
-            -e 's block/bootdevice/by-name/vendor sde53 ' \
-            -e 's block/bootdevice/by-name/userdata sda31 ' \
-            -e 's block/bootdevice/by-name/cache sda29 ' \
-            -e 's block/bootdevice/by-name/persist sda23 ' \
-            -e 's block/bootdevice/by-name/misc sda11 ' \
-            -e 's block/bootdevice/by-name/modem sde52 ' \
-            -e 's block/bootdevice/by-name/dsp sde48 ' \
-            -e 's block/bootdevice/by-name/bluetooth sde26 ' \
-            -e 's block/bootdevice/by-name/vbmeta sde10 ' \
-            -e 's block/bootdevice/by-name/vbmeta_system sde47 ' \
-            -e 's block/bootdevice/by-name/abl sde17 ' \
-            -e 's block/bootdevice/by-name/xbl sdb2 ' \
-            -e 's block/bootdevice/by-name/xbl_config sdb1 ' \
-            -e 's block/bootdevice/by-name/tz sde19 ' \
-            -e 's block/bootdevice/by-name/hyp sde21 ' \
-            -e 's block/bootdevice/by-name/keymaster sde31 ' \
-            -e 's block/bootdevice/by-name/cmnlib sde27 ' \
-            -e 's block/bootdevice/by-name/cmnlib64 sde29 ' \
-            -e 's block/bootdevice/by-name/devcfg sde33 ' \
-            -e 's block/bootdevice/by-name/qupfw sde35 ' \
-            -e 's block/bootdevice/by-name/storsec sde37 ' \
-            -e 's block/bootdevice/by-name/modemst1 sdf2 ' \
-            -e 's block/bootdevice/by-name/modemst2 sdf3 ' \
-            -e 's block/bootdevice/by-name/fsc sdf5 ' \
-            -e 's block/bootdevice/by-name/fsg sdf1 ' \
-            -e 's block/bootdevice/by-name/aop sde11 ' \
-            -e 's block/bootdevice/by-name/cust sda30 ' \
-            -e 's block/bootdevice/by-name/logo sde46 ' \
-            -e 's block/bootdevice/by-name/splash sda19 ' \
-            -e 's block/bootdevice/by-name/keystore sda20 ' \
-            -e 's block/bootdevice/by-name/frp sda21 ' \
-            -e 's block/bootdevice/by-name/logfs sda18 ' \
-            -e 's block/bootdevice/by-name/devinfo sda7 ' \
-            -e 's block/bootdevice/by-name/product sde55 ' \
-            -e 's block/bootdevice/by-name/metadata sda19 ' \
-            -e 's block/by-name/metadata sda19 ' \
-            "$@"
-        ;;
-
-RAPHAEL_EOF
+            # Create raphael fixup content
+            cat > /tmp/raphael_fixups.txt << 'EOF'
+          "raphael"|"raphaelin")
+              # Xiaomi Mi 9T Pro - SM8150 - Verified 2025-02-17
+              sed -i \
+                  -e 's block/bootdevice/by-name/boot sde49 ' \
+                  -e 's block/bootdevice/by-name/recovery sda28 ' \
+                  -e 's block/bootdevice/by-name/dtbo sde45 ' \
+                  -e 's block/bootdevice/by-name/system sde54 ' \
+                  -e 's block/bootdevice/by-name/vendor sde53 ' \
+                  -e 's block/bootdevice/by-name/userdata sda31 ' \
+                  -e 's block/bootdevice/by-name/cache sda29 ' \
+                  -e 's block/bootdevice/by-name/persist sda23 ' \
+                  -e 's block/bootdevice/by-name/misc sda11 ' \
+                  -e 's block/bootdevice/by-name/modem sde52 ' \
+                  -e 's block/bootdevice/by-name/dsp sde48 ' \
+                  -e 's block/bootdevice/by-name/bluetooth sde26 ' \
+                  -e 's block/bootdevice/by-name/vbmeta sde10 ' \
+                  -e 's block/bootdevice/by-name/vbmeta_system sde47 ' \
+                  -e 's block/bootdevice/by-name/abl sde17 ' \
+                  -e 's block/bootdevice/by-name/xbl sdb2 ' \
+                  -e 's block/bootdevice/by-name/xbl_config sdb1 ' \
+                  -e 's block/bootdevice/by-name/tz sde19 ' \
+                  -e 's block/bootdevice/by-name/hyp sde21 ' \
+                  -e 's block/bootdevice/by-name/keymaster sde31 ' \
+                  -e 's block/bootdevice/by-name/cmnlib sde27 ' \
+                  -e 's block/bootdevice/by-name/cmnlib64 sde29 ' \
+                  -e 's block/bootdevice/by-name/devcfg sde33 ' \
+                  -e 's block/bootdevice/by-name/qupfw sde35 ' \
+                  -e 's block/bootdevice/by-name/storsec sde37 ' \
+                  -e 's block/bootdevice/by-name/modemst1 sdf2 ' \
+                  -e 's block/bootdevice/by-name/modemst2 sdf3 ' \
+                  -e 's block/bootdevice/by-name/fsc sdf5 ' \
+                  -e 's block/bootdevice/by-name/fsg sdf1 ' \
+                  -e 's block/bootdevice/by-name/aop sde11 ' \
+                  -e 's block/bootdevice/by-name/cust sda30 ' \
+                  -e 's block/bootdevice/by-name/logo sde46 ' \
+                  -e 's block/bootdevice/by-name/splash sda19 ' \
+                  -e 's block/bootdevice/by-name/keystore sda20 ' \
+                  -e 's block/bootdevice/by-name/frp sda21 ' \
+                  -e 's block/bootdevice/by-name/logfs sda18 ' \
+                  -e 's block/bootdevice/by-name/devinfo sda7 ' \
+                  -e 's block/bootdevice/by-name/product sde55 ' \
+                  -e 's block/bootdevice/by-name/metadata sda19 ' \
+                  -e 's block/by-name/metadata sda19 ' \
+                  "$@"
+              ;;
+          EOF
+            # Fix indentation for fixup-mountpoints (needs 4-space indent)
+            sed -i 's/^          /    /' /tmp/raphael_fixups.txt
             # Insert before *)
             sed -i '/^[[:space:]]*\*)$/e cat /tmp/raphael_fixups.txt' "$FIXUP_FILE" || {
               head -n -20 "$FIXUP_FILE" > /tmp/fixup_temp
