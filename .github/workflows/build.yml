@@ -50,6 +50,127 @@ jobs:
           # Copy HAL artifacts to proper location
           cp -r hal-output/* $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}/ || true
           
+          # Clone required Android system headers for DHD build
+          git clone https://github.com/AsteroidOS/android_system_core.git -b hybris-17.1 $ANDROID_ROOT/system/core --depth=1 || \
+            git clone https://github.com/AsteroidOS/android_system_core.git $ANDROID_ROOT/system/core --depth=1 || \
+            git clone https://android.googlesource.com/platform/system/core -b android-10.0.0_r1 $ANDROID_ROOT/system/core --depth=1
+          git clone https://android.googlesource.com/platform/system/libbase -b android-10.0.0_r1 $ANDROID_ROOT/system/libbase --depth=1 || true
+          
+          # Create the private header directory and generated config
+          mkdir -p $ANDROID_ROOT/system/core/include/private
+          cat > $ANDROID_ROOT/system/core/include/private/android_filesystem_config.h << 'FSCONFIG'
+          #pragma once
+          #include <sys/types.h>
+          #define AID_ROOT 0
+          #define AID_SYSTEM 1000
+          #define AID_RADIO 1001
+          #define AID_BLUETOOTH 1002
+          #define AID_GRAPHICS 1003
+          #define AID_INPUT 1004
+          #define AID_AUDIO 1005
+          #define AID_CAMERA 1006
+          #define AID_LOG 1007
+          #define AID_COMPASS 1008
+          #define AID_MOUNT 1009
+          #define AID_WIFI 1010
+          #define AID_ADB 1011
+          #define AID_INSTALL 1012
+          #define AID_MEDIA 1013
+          #define AID_DHCP 1014
+          #define AID_SDCARD_RW 1015
+          #define AID_VPN 1016
+          #define AID_KEYSTORE 1017
+          #define AID_USB 1018
+          #define AID_DRM 1019
+          #define AID_MDNSR 1020
+          #define AID_GPS 1021
+          #define AID_MEDIA_RW 1023
+          #define AID_MTP 1024
+          #define AID_NFC 1027
+          #define AID_SDCARD_R 1028
+          #define AID_CLAT 1029
+          #define AID_LOOP_RADIO 1030
+          #define AID_MEDIA_DRM 1031
+          #define AID_PACKAGE_INFO 1032
+          #define AID_SDCARD_PICS 1033
+          #define AID_SDCARD_AV 1034
+          #define AID_SDCARD_ALL 1035
+          #define AID_LOGD 1036
+          #define AID_SHARED_RELRO 1037
+          #define AID_DBUS 1038
+          #define AID_TLSDATE 1039
+          #define AID_MEDIA_EX 1040
+          #define AID_AUDIOSERVER 1041
+          #define AID_METRICS_COLL 1042
+          #define AID_METRICSD 1043
+          #define AID_WEBSERV 1044
+          #define AID_DEBUGGERD 1045
+          #define AID_MEDIA_CODEC 1046
+          #define AID_CAMERASERVER 1047
+          #define AID_FIREWALL 1048
+          #define AID_TRUNKS 1049
+          #define AID_NVRAM 1050
+          #define AID_DNS 1051
+          #define AID_DNS_TETHER 1052
+          #define AID_WEBVIEW_ZYGOTE 1053
+          #define AID_VEHICLE_NETWORK 1054
+          #define AID_MEDIA_AUDIO 1055
+          #define AID_MEDIA_VIDEO 1056
+          #define AID_MEDIA_IMAGE 1057
+          #define AID_TOMBSTONED 1058
+          #define AID_MEDIA_OBB 1059
+          #define AID_ESE 1060
+          #define AID_OTA_UPDATE 1061
+          #define AID_AUTOMOTIVE_EVS 1062
+          #define AID_LOWPAN 1063
+          #define AID_HSM 1064
+          #define AID_RESERVED_DISK 1065
+          #define AID_STATSD 1066
+          #define AID_INCIDENTD 1067
+          #define AID_SECURE_ELEMENT 1068
+          #define AID_LMKD 1069
+          #define AID_LLKD 1070
+          #define AID_IORAPD 1071
+          #define AID_GPU_SERVICE 1072
+          #define AID_NETWORK_STACK 1073
+          #define AID_SHELL 2000
+          #define AID_CACHE 2001
+          #define AID_DIAG 2002
+          #define AID_NET_BT_ADMIN 3001
+          #define AID_NET_BT 3002
+          #define AID_INET 3003
+          #define AID_NET_RAW 3004
+          #define AID_NET_ADMIN 3005
+          #define AID_NET_BW_STATS 3006
+          #define AID_NET_BW_ACCT 3007
+          #define AID_READPROC 3009
+          #define AID_WAKELOCK 3010
+          #define AID_UHID 3011
+          #define AID_EVERYBODY 9997
+          #define AID_MISC 9998
+          #define AID_NOBODY 9999
+          #define AID_APP 10000
+          #define AID_APP_START 10000
+          #define AID_APP_END 19999
+          #define AID_CACHE_GID_START 20000
+          #define AID_CACHE_GID_END 29999
+          #define AID_EXT_GID_START 30000
+          #define AID_EXT_GID_END 39999
+          #define AID_EXT_CACHE_GID_START 40000
+          #define AID_EXT_CACHE_GID_END 49999
+          #define AID_SHARED_GID_START 50000
+          #define AID_SHARED_GID_END 59999
+          #define AID_ISOLATED_START 99000
+          #define AID_ISOLATED_END 99999
+          #define AID_USER 100000
+          #define AID_USER_OFFSET 100000
+          FSCONFIG
+          
+          # Create generated config header
+          cat > $ANDROID_ROOT/generated_android_filesystem_config.h << 'GENCONFIG'
+          #include <private/android_filesystem_config.h>
+          GENCONFIG
+          
           # Clone mer-kernel-check (needed for RPM build verification)
           mkdir -p $ANDROID_ROOT/hybris
           git clone https://github.com/mer-hybris/mer-kernel-check.git $ANDROID_ROOT/hybris/mer-kernel-check --depth=1
