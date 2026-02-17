@@ -24,48 +24,39 @@ permissions:
 env:
   DEVICE: raphael
   VENDOR: xiaomi
-  ANDROID_ROOT: /home/runner/work/ci/ci/hadk_16.0
   SAILFISH_SDK_VERSION: 5.0.0.43
   SAILFISH_OS_VERSION: 5.0.0.71
 
 jobs:
-  # 1. Sync source code
-  prep-source:
+  # Combined build job
+  build:
     runs-on: ubuntu-22.04
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 20480
+          root-reserve-mb: 512
           swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-haskell: 'true'
           remove-android: 'true'
           remove-docker-images: 'true'
+          build-mount-path: '/mnt/build'
           
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          swap-storage: true
+      - name: Free Disk Space Aggressively
+        run: |
+          echo "=== Before cleanup ==="
+          df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo rm -rf /usr/local/share/boost /usr/share/swift /usr/local/.ghcup
+          sudo rm -rf /opt/az /opt/microsoft /opt/google
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          echo "=== After cleanup ==="
+          df -h
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Cache Repo Tool & Source
-        id: cache-android
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/bin/repo
-            ${{ env.ANDROID_ROOT }}/.repo
-          key: ${{ runner.os }}-android-repo-raphael-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-android-repo-raphael-
 
       - name: Download repo bin
         run: |
@@ -77,48 +68,13 @@ jobs:
 
       - name: Repo Sync
         run: |
+          export ANDROID_ROOT=/mnt/build/hadk_16.0
           mkdir -p $ANDROID_ROOT
           cd $ANDROID_ROOT
           python3 ~/bin/repo init -u https://github.com/mer-hybris/android.git -b hybris-16.0 --depth=1
-          python3 ~/bin/repo sync -j$(nproc --all) -c --no-clone-bundle --no-tags --optimized-fetch --prune
+          python3 ~/bin/repo sync -j$(nproc --all) -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync
 
-  # 2. Build HAL
-  build-hal:
-    needs: prep-source
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 30720
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
-          remove-android: 'true'
-          remove-docker-images: 'true'
-          
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          swap-storage: true
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Restore Repo Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/bin/repo
-            ${{ env.ANDROID_ROOT }}/.repo
-          key: ${{ runner.os }}-android-repo-raphael-${{ github.sha }}
-
-      - name: Prepare Environment & Build
+      - name: Install Build Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -129,19 +85,13 @@ jobs:
             libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc yasm zip zlib1g-dev \
             qemu-user-static qemu-system-arm e2fsprogs simg2img \
             libtinfo5 libncurses5 gzip virtualenv git python2
+          sudo ln -sf /usr/bin/python2.7 /usr/bin/python
 
-          mkdir -p ~/bin
-          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-          chmod a+x ~/bin/repo
-          git config --global user.email "ci@github.com"
-          git config --global user.name "Github Actions"
-
-          # Restore workspace from .repo
-          cd $ANDROID_ROOT
-          python3 ~/bin/repo sync -l
+      - name: Clone Device Repos & Build
+        run: |
+          export ANDROID_ROOT=/mnt/build/hadk_16.0
           
           # Clone device-specific repos for raphael (Mi 9T Pro / SM8150)
-          # TODO: Replace with your forked repos once you upload them
           git clone https://github.com/Andrew21P/device_xiaomi_raphael.git $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || \
             git clone https://github.com/LineageOS/android_device_xiaomi_raphael.git -b lineage-16.0 $ANDROID_ROOT/device/xiaomi/raphael --depth=1 || true
           
@@ -168,18 +118,19 @@ jobs:
           # Hardware xiaomi
           git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-18.1 $ANDROID_ROOT/hardware/xiaomi --depth=1 --single-branch
 
-          cd ${{ github.workspace }}
-          sudo ln -sf /usr/bin/python2.7 /usr/bin/python
-          chmod +x build-hal.sh
-          bash build-hal.sh
+          # Build
+          cd $ANDROID_ROOT
+          source build/envsetup.sh
+          breakfast raphael || lunch lineage_raphael-userdebug || true
+          make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot hybris-recovery
 
       - name: Upload HAL Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: hal-output
           path: |
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/hybris-boot.img
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/hybris-recovery.img
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/system.img
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/vendor.img
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/*.prop
+            /mnt/build/hadk_16.0/out/target/product/${{ env.DEVICE }}/hybris-boot.img
+            /mnt/build/hadk_16.0/out/target/product/${{ env.DEVICE }}/hybris-recovery.img
+            /mnt/build/hadk_16.0/out/target/product/${{ env.DEVICE }}/system.img
+            /mnt/build/hadk_16.0/out/target/product/${{ env.DEVICE }}/vendor.img
+            /mnt/build/hadk_16.0/out/target/product/${{ env.DEVICE }}/*.prop
