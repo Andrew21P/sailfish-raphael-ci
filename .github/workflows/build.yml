@@ -113,9 +113,16 @@ jobs:
           echo "=== Cloned repos ==="
           ls -la device/xiaomi/ kernel/xiaomi/ hardware/ hybris/ || true
           
-          # Cleanup problematic packages
+          # Cleanup problematic packages (PE/Lineage specific stuff that hybris doesn't have)
+          rm -rf device/xiaomi/raphael/parts  # XiaomiParts depends on lineage resources
+          rm -rf device/xiaomi/raphael/fod    # FOD hal
+          rm -rf device/xiaomi/raphael/org.ifaa.android.manager  # IFAA
           find device/xiaomi -name "*.mk" -exec sed -i '/WfdCommon/d' {} \; 2>/dev/null || true
           find device/xiaomi -name "*.mk" -exec sed -i '/BluetoothQti/d' {} \; 2>/dev/null || true
+          find device/xiaomi -name "*.mk" -exec sed -i '/XiaomiParts/d' {} \; 2>/dev/null || true
+          find device/xiaomi -name "*.mk" -exec sed -i '/DeviceParts/d' {} \; 2>/dev/null || true
+          find device/xiaomi -name "*.bp" -exec sed -i '/XiaomiParts/d' {} \; 2>/dev/null || true
+          find device/xiaomi -name "Android.mk" -exec sed -i '/parts/d' {} \; 2>/dev/null || true
 
       - name: Build HAL
         run: |
