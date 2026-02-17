@@ -218,6 +218,14 @@ jobs:
           # Copy HAL artifacts to proper location
           cp -r hal-output/* $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}/ || true
           
+          # Clone mer-kernel-check (needed for RPM build verification)
+          mkdir -p $ANDROID_ROOT/hybris
+          git clone https://github.com/mer-hybris/mer-kernel-check.git $ANDROID_ROOT/hybris/mer-kernel-check --depth=1
+          
+          # Create a dummy kernel .config since we already built the kernel
+          mkdir -p $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}/obj/KERNEL_OBJ
+          touch $ANDROID_ROOT/out/target/product/${{ env.DEVICE }}/obj/KERNEL_OBJ/.config
+          
           # Clone the raphael-specific repos
           cd $ANDROID_ROOT
           
