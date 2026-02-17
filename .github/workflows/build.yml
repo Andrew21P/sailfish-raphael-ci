@@ -178,9 +178,7 @@ jobs:
           # Replace hybris-boot with fixup-mountpoints
           #------------------------------------------
           rm -rf $ANDROID_ROOT/hybris/hybris-boot || true
-          git clone https://github.com/AleGasMex/hybris-boot.git \
-            -b hybris-18.1-raphael $ANDROID_ROOT/hybris/hybris-boot --depth=1 || \
-          git clone https://github.com/AleGasMex/hybris-boot.git \
+          git clone https://github.com/mer-hybris/hybris-boot.git \
             $ANDROID_ROOT/hybris/hybris-boot --depth=1
 
           #------------------------------------------
@@ -264,7 +262,7 @@ RAPHAEL_EOF
           # Clone droidmedia
           #------------------------------------------
           rm -rf external/droidmedia || true
-          git clone --recurse-submodules https://github.com/AleGasMex/droidmedia.git external/droidmedia
+          git clone --recurse-submodules https://github.com/sailfishos/droidmedia.git external/droidmedia
           cd external/droidmedia
           git checkout 0.20230605.1 || true
           echo 'MINIMEDIA_AUDIOPOLICYSERVICE_ENABLE := 1' > env.mk
@@ -275,7 +273,7 @@ RAPHAEL_EOF
           #------------------------------------------
           cd $ANDROID_ROOT/external
           rm -rf libhybris || true
-          git clone --recurse-submodules https://github.com/AleGasMex/libhybris.git
+          git clone --recurse-submodules https://github.com/mer-hybris/libhybris.git
 
           #------------------------------------------
           # Apply hybris-patches
@@ -331,31 +329,37 @@ RAPHAEL_EOF
           rm -rf .repo || true
 
           #------------------------------------------
-          # Clone RPM packaging repos
+          # Copy local RPM packaging repos (from checked-out workspace)
           #------------------------------------------
+          WORKSPACE=${{ github.workspace }}
+          
+          # hybris-installer from ginkgo (for mkbootfs, etc.)
           git clone https://github.com/sailfish-on-ginkgo/hybris-installer.git \
             $ANDROID_ROOT/hybris/hybris-installer || true
 
-          git clone --recurse-submodules \
-            https://github.com/${{ github.repository_owner }}/droid-hal-raphael.git \
-            $ANDROID_ROOT/rpm --depth=1 || \
-          git clone --recurse-submodules \
-            https://github.com/AleGasMex/droid-hal-raphael.git \
-            $ANDROID_ROOT/rpm --depth=1
+          # Copy droid-hal-raphael (contains HAL packaging)
+          mkdir -p $ANDROID_ROOT/rpm
+          cp -r $WORKSPACE/droid-hal-raphael/* $ANDROID_ROOT/rpm/
+          cd $ANDROID_ROOT/rpm
+          git init && git add -A && git commit -m "init" || true
+          # Clone the dhd submodule
+          git clone https://github.com/mer-hybris/droid-hal-device.git $ANDROID_ROOT/rpm/dhd --depth=1
 
-          git clone --recurse-submodules \
-            https://github.com/${{ github.repository_owner }}/droid-config-raphael.git \
-            $ANDROID_ROOT/hybris/droid-configs --depth=1 || \
-          git clone --recurse-submodules \
-            https://github.com/AleGasMex/droid-config-raphael.git \
-            $ANDROID_ROOT/hybris/droid-configs --depth=1
+          # Copy droid-config-raphael (contains sparse overlays, patterns)
+          mkdir -p $ANDROID_ROOT/hybris/droid-configs
+          cp -r $WORKSPACE/droid-config-raphael/* $ANDROID_ROOT/hybris/droid-configs/
+          cd $ANDROID_ROOT/hybris/droid-configs
+          git init && git add -A && git commit -m "init" || true
+          # Clone the droid-configs-device submodule
+          git clone https://github.com/mer-hybris/droid-hal-configs.git $ANDROID_ROOT/hybris/droid-configs/droid-configs-device --depth=1
 
-          git clone --recurse-submodules \
-            https://github.com/${{ github.repository_owner }}/droid-hal-version-raphael.git \
-            $ANDROID_ROOT/hybris/droid-hal-version-raphael --depth=1 || \
-          git clone --recurse-submodules \
-            https://github.com/AleGasMex/droid-hal-version-raphael.git \
-            $ANDROID_ROOT/hybris/droid-hal-version-raphael --depth=1
+          # Copy droid-hal-version-raphael
+          mkdir -p $ANDROID_ROOT/hybris/droid-hal-version-raphael
+          cp -r $WORKSPACE/droid-hal-version-raphael/* $ANDROID_ROOT/hybris/droid-hal-version-raphael/
+          cd $ANDROID_ROOT/hybris/droid-hal-version-raphael
+          git init && git add -A && git commit -m "init" || true
+          # Clone the droid-hal-version submodule
+          git clone https://github.com/mer-hybris/droid-hal-version.git $ANDROID_ROOT/hybris/droid-hal-version-raphael/rpm/droid-hal-version --depth=1
 
           #------------------------------------------
           # Setup Docker workspace
