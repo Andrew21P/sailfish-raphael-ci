@@ -406,10 +406,16 @@ RAPHAEL_EOF
         uses: actions/upload-artifact@v4
         with:
           name: sailfishos-zip
-          path: ${{ env.ANDROID_ROOT }}/SailfishOScommunity-release-*/sailfishos-*.zip
+          path: |
+            ${{ env.ANDROID_ROOT }}/SailfishOScommunity-*/sailfishos-*.zip
+            ${{ env.ANDROID_ROOT }}/SailfishOS-*/sailfishos-*.zip
+            ${{ env.ANDROID_ROOT }}/SailfishOScommunity-*/*.zip
+            ${{ env.ANDROID_ROOT }}/SailfishOS-*/*.zip
 
       - name: Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: ${{ env.ANDROID_ROOT }}/SailfishOScommunity-release-*/sailfishos-*-${{ env.DEVICE }}*.zip
+          files: |
+            ${{ env.ANDROID_ROOT }}/SailfishOScommunity-*/*-${{ env.DEVICE }}*.zip
+            ${{ env.ANDROID_ROOT }}/SailfishOS-*/*-${{ env.DEVICE }}*.zip

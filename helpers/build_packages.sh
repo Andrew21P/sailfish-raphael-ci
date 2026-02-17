@@ -371,7 +371,22 @@ if [ "$BUILDIMAGE" = "1" ]; then
     ks="Jolla-@RELEASE@-$DEVICE-@ARCH@.ks"
     #hack, why?
     mkdir -p $srcks
-    cp /home/mersdk/work/ci/ci/Jolla-@RELEASE@-$DEVICE-@ARCH@.ks $srcks/$ks
+    # Try multiple paths for CI kickstart file
+    KICKSTART_SRC=""
+    for ks_path in \
+        "/home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci/Jolla-@RELEASE@-$DEVICE-@ARCH@.ks" \
+        "$ANDROID_ROOT/../Jolla-@RELEASE@-$DEVICE-@ARCH@.ks" \
+        "/home/mersdk/work/ci/ci/Jolla-@RELEASE@-$DEVICE-@ARCH@.ks"; do
+        if [ -f "$ks_path" ]; then
+            KICKSTART_SRC="$ks_path"
+            break
+        fi
+    done
+    if [ -n "$KICKSTART_SRC" ]; then
+        cp "$KICKSTART_SRC" $srcks/$ks
+    elif [ ! -f "$srcks/$ks" ]; then
+        echo "Warning: Kickstart file not found, build may fail"
+    fi
 
     if sdk-assistant maintain $VENDOR-$DEVICE-$PORT_ARCH ssu s 2>/dev/null | grep -q "Release (rnd): latest (devel)"; then
         bleeding_edge_build_by_sailors=1

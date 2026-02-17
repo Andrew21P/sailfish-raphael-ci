@@ -42,9 +42,60 @@ cd $ANDROID_ROOT
 sudo mkdir -p /proc/sys/fs/binfmt_misc/
 sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc
 
+# Copy kickstart file to the expected location 
+KS_SRC=/home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci/Jolla-@RELEASE@-$DEVICE-@ARCH@.ks
+if [ -f "$KS_SRC" ]; then
+    echo "Copying kickstart file from $KS_SRC"
+    mkdir -p $ANDROID_ROOT/../
+    cp "$KS_SRC" "$ANDROID_ROOT/../Jolla-@RELEASE@-$DEVICE-@ARCH@.ks"
+fi
+
+# Build all packages including the image 
 rpm/dhd/helpers/build_packages.sh
 
 if [ "$?" -ne 0 ];then
   # if failed, show errors
   cat $ANDROID_ROOT/droid-hal-$DEVICE.log | grep -E "ERROR|error:" | tail -50
+fi
+#------------------------------------------
+# Package the rootfs into flashable ZIP
+#------------------------------------------
+echo "=================================================="
+echo "Creating flashable ZIP using hybris-installer..."
+echo "=================================================="
+
+# Find the MIC output directory (SailfishOScommunity-release-* or similar)
+IMG_DIR=""
+for d in "$ANDROID_ROOT/SailfishOScommunity-release-"*/ "$ANDROID_ROOT/SailfishOS-"*/; do
+    if [ -d "$d" ]; then
+        IMG_DIR="$d"
+        break
+    fi
+done
+
+if [ -z "$IMG_DIR" ] || [ ! -d "$IMG_DIR" ]; then
+    echo "ERROR: MIC output directory not found, skipping ZIP creation"
+    exit 0
+fi
+
+# Copy pack_package-droid-updater to MIC output
+PACK_SCRIPT="$ANDROID_ROOT/hybris/droid-configs/kickstart/pack_package-droid-updater"
+if [ -f "$PACK_SCRIPT" ]; then
+    # Substitute device token
+    sed -e "s/@DEVICE@/$DEVICE/g" \
+        -e "s/@EXTRA_NAME@/$EXTRA_NAME/g" \
+        "$PACK_SCRIPT" > "/tmp/pack_package-droid-updater"
+    chmod +x /tmp/pack_package-droid-updater
+    
+    # Set environment and run packaging
+    export IMG_OUT_DIR="$IMG_DIR"
+    cd "$ANDROID_ROOT"
+    bash /tmp/pack_package-droid-updater
+    
+    echo "=================================================="
+    echo "ZIP creation complete! Files:"
+    ls -la "$IMG_DIR"/*.zip 2>/dev/null || echo "No ZIP files found"
+    echo "=================================================="
+else
+    echo "WARNING: pack_package-droid-updater not found at $PACK_SCRIPT"
 fi
