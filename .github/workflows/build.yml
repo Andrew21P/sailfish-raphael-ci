@@ -121,6 +121,8 @@ jobs:
             ~/bin/repo
             ${{ env.ANDROID_ROOT }}/.repo
           key: ${{ runner.os }}-android-repo-hybris18-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-android-repo-hybris18-
 
       - name: Prepare Environment & Build
         run: |
@@ -146,9 +148,19 @@ jobs:
           git config --global user.name "Github Actions"
           git config --global --add safe.directory '*'
 
-          # Restore from cache (local checkout only)
+          # Create directory and sync from cache
+          mkdir -p $ANDROID_ROOT
           cd $ANDROID_ROOT
-          python3 ~/bin/repo sync -l
+          
+          # If .repo exists from cache, use local sync; otherwise full init+sync
+          if [ -d ".repo" ]; then
+            echo "Cache found, running local checkout..."
+            python3 ~/bin/repo sync -l -j$(nproc --all) || python3 ~/bin/repo sync -j$(nproc --all) -c --no-clone-bundle --no-tags
+          else
+            echo "No cache, running full init+sync..."
+            python3 ~/bin/repo init -u https://github.com/mer-hybris/android.git -b hybris-18.1 --depth=1
+            python3 ~/bin/repo sync -j$(nproc --all) -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync
+          fi
 
           #------------------------------------------
           # Clone device-specific repos for raphael
