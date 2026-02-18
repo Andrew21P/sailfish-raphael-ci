@@ -164,30 +164,21 @@ jobs:
 
           #------------------------------------------
           # Clone device-specific repos for raphael
+          # Using PixelExperience repos (have aosp_raphael.mk target)
           # ALL URLS VERIFIED 2026-02-18
           #------------------------------------------
-          # Device tree (LineageOS lineage-18.1 branch) - VERIFIED
+          # Device tree (PixelExperience eleven branch) - VERIFIED - has aosp_raphael.mk
           rm -rf $ANDROID_ROOT/device/xiaomi/raphael || true
-          git clone https://github.com/LineageOS/android_device_xiaomi_raphael.git \
-            $ANDROID_ROOT/device/xiaomi/raphael --depth=1 -b lineage-18.1
+          git clone https://github.com/PixelExperience-Devices/device_xiaomi_raphael.git \
+            $ANDROID_ROOT/device/xiaomi/raphael --depth=1 -b eleven
 
-          # SM8150 common tree (LineageOS lineage-18.1 branch) - VERIFIED
-          rm -rf $ANDROID_ROOT/device/xiaomi/sm8150-common || true
-          git clone https://github.com/LineageOS/android_device_xiaomi_sm8150-common.git \
-            $ANDROID_ROOT/device/xiaomi/sm8150-common --depth=1 -b lineage-18.1
+          # Kernel (PixelExperience eleven branch) - VERIFIED
+          rm -rf $ANDROID_ROOT/kernel/xiaomi/raphael || true
+          git clone https://github.com/PixelExperience-Devices/kernel_xiaomi_raphael.git \
+            $ANDROID_ROOT/kernel/xiaomi/raphael --depth=1 -b eleven
 
-          # Kernel (LineageOS lineage-18.1 branch) - VERIFIED
-          rm -rf $ANDROID_ROOT/kernel/xiaomi/sm8150 || true
-          git clone https://github.com/LineageOS/android_kernel_xiaomi_sm8150.git \
-            $ANDROID_ROOT/kernel/xiaomi/sm8150 --depth=1 -b lineage-18.1
-
-          # Vendor blobs - extract from device or use gitlab mirror
-          # Note: TheMuppets vendor repos blocked (HTTP 451), using alternative
-          mkdir -p $ANDROID_ROOT/vendor/xiaomi/raphael
-          mkdir -p $ANDROID_ROOT/vendor/xiaomi/sm8150-common
-          echo "Vendor blobs will be extracted from device or minimal stubs created"
-
-          # Hardware Xiaomi
+          # Hardware Xiaomi (LineageOS - used by PE too)
+          rm -rf $ANDROID_ROOT/hardware/xiaomi || true
           git clone https://github.com/LineageOS/android_hardware_xiaomi.git \
             -b lineage-18.1 $ANDROID_ROOT/hardware/xiaomi --depth=1 --single-branch || true
 
@@ -206,6 +197,45 @@ jobs:
           rm -rf $ANDROID_ROOT/hardware/qcom-caf/sm8150/media || true
           git clone https://github.com/LineageOS/android_hardware_qcom_media.git \
             -b lineage-18.1-caf-sm8150 $ANDROID_ROOT/hardware/qcom-caf/sm8150/media --depth=1
+
+          #------------------------------------------
+          # Create vendor stubs (minimal for hybris-hal)
+          #------------------------------------------
+          mkdir -p $ANDROID_ROOT/vendor/xiaomi/raphael
+          {
+            echo '# Stub vendor makefile for hybris build'
+            echo 'PRODUCT_SOONG_NAMESPACES += vendor/xiaomi/raphael'
+          } > $ANDROID_ROOT/vendor/xiaomi/raphael/raphael-vendor.mk
+          
+          {
+            echo '// Stub Android.bp for hybris build'
+            echo 'soong_namespace {'
+            echo '}'
+          } > $ANDROID_ROOT/vendor/xiaomi/raphael/Android.bp
+          
+          echo '# Stub BoardConfig for hybris' > $ANDROID_ROOT/vendor/xiaomi/raphael/BoardConfigVendor.mk
+
+          # Create vendor/aosp stub (PE dependency)
+          mkdir -p $ANDROID_ROOT/vendor/aosp/config
+          {
+            echo '# Stub - removed PE vendor for hybris build'
+            echo '$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)'
+          } > $ANDROID_ROOT/vendor/aosp/config/common_full_phone.mk
+
+          #------------------------------------------
+          # Patch device tree for hybris compatibility
+          #------------------------------------------
+          # Fix kernel path (PE uses kernel/xiaomi/raphael, not sm8150)
+          if [ -f "$ANDROID_ROOT/device/xiaomi/raphael/BoardConfig.mk" ]; then
+            sed -i 's|kernel/xiaomi/sm8150|kernel/xiaomi/raphael|g' \
+              $ANDROID_ROOT/device/xiaomi/raphael/BoardConfig.mk || true
+          fi
+          
+          # Remove lineage fingerprint inscreen dependency (causes build error)
+          sed -i '/vendor.lineage.biometrics.fingerprint.inscreen/d' \
+            $ANDROID_ROOT/device/xiaomi/raphael/device.mk || true
+          sed -i '/XiaomiParts/d' \
+            $ANDROID_ROOT/device/xiaomi/raphael/device.mk || true
 
           #------------------------------------------
           # Replace hybris-boot with fixup-mountpoints
@@ -280,48 +310,20 @@ jobs:
           fi
 
           #------------------------------------------
-          # Strip LineageOS dependencies (CRITICAL for hybris)
+          # Clean up ROM-specific dependencies for hybris
           #------------------------------------------
-          # Remove LineageOS vendor build system (causes PATH_OVERRIDE_SOONG error)
-          rm -rf vendor/lineage || true
-          rm -rf vendor/codeaurora || true
-          
           # Create stub envsetup.sh that build/envsetup.sh tries to source
           mkdir -p vendor/lineage/build
-          echo "# Stub - LineageOS removed for hybris build" > vendor/lineage/build/envsetup.sh
+          echo "# Stub - removed for hybris build" > vendor/lineage/build/envsetup.sh
           
-          # Remove LineageOS overlay references from device trees
-          find device/xiaomi -name "*.mk" -exec sed -i \
-            -e '/XiaomiParts/d' \
-            -e '/vendor.lineage/d' \
-            -e '/lineage.livedisplay/d' \
-            -e '/lineage.trust/d' \
-            -e '/TouchFeature/d' \
-            -e '/overlay-lineage/d' \
-            -e '/PRODUCT_SOONG_NAMESPACES.*lineage/d' \
-            -e '/lineage_/d' {} \; || true
-
-          # Remove problematic LineageOS-specific directories
+          # Remove problematic PE/LineageOS-specific stuff
           rm -rf device/xiaomi/raphael/XiaomiParts || true
-          rm -rf device/xiaomi/sm8150-common/XiaomiParts || true
           rm -rf device/xiaomi/raphael/parts || true
-          rm -rf device/xiaomi/sm8150-common/fod || true
           rm -rf device/xiaomi/raphael/fod || true
           
-          # Fix device makefiles to not depend on lineage
-          for mk in device/xiaomi/raphael/*.mk device/xiaomi/sm8150-common/*.mk; do
-            if [ -f "$mk" ]; then
-              sed -i \
-                -e 's/lineage_raphael/aosp_raphael/g' \
-                -e '/inherit.*lineage.*vendor/d' \
-                -e '/inherit.*vendor.*lineage/d' \
-                -e '/call inherit-product.*lineage/d' "$mk" || true
-            fi
-          done
-          
-          # Remove lineage.dependencies that pull in more lineage repos
+          # Remove aosp.dependencies to avoid pulling more repos
+          rm -f device/xiaomi/raphael/aosp.dependencies || true
           rm -f device/xiaomi/raphael/lineage.dependencies || true
-          rm -f device/xiaomi/sm8150-common/lineage.dependencies || true
 
           #------------------------------------------
           # Clone droidmedia
@@ -352,29 +354,9 @@ jobs:
           sudo ln -sf /usr/bin/python2.7 /usr/bin/python || true
           source build/envsetup.sh 2>&1
           
-          # Use AOSP target since we removed LineageOS deps
-          # Create minimal product makefile if needed
-          if [ ! -f "device/xiaomi/raphael/aosp_raphael.mk" ]; then
-            {
-              echo '# Minimal AOSP product for hybris build'
-              echo '$(call inherit-product, device/xiaomi/raphael/device.mk)'
-              echo '$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)'
-              echo ''
-              echo 'PRODUCT_NAME := aosp_raphael'
-              echo 'PRODUCT_DEVICE := raphael'
-              echo 'PRODUCT_BRAND := Xiaomi'
-              echo 'PRODUCT_MODEL := Mi 9T Pro'
-              echo 'PRODUCT_MANUFACTURER := Xiaomi'
-            } > device/xiaomi/raphael/aosp_raphael.mk
-          fi
-          
-          # Update AndroidProducts.mk to include aosp target
-          if ! grep -q "aosp_raphael" device/xiaomi/raphael/AndroidProducts.mk 2>/dev/null; then
-            echo 'PRODUCT_MAKEFILES += $(LOCAL_DIR)/aosp_raphael.mk' >> device/xiaomi/raphael/AndroidProducts.mk
-            echo 'COMMON_LUNCH_CHOICES += aosp_raphael-userdebug' >> device/xiaomi/raphael/AndroidProducts.mk
-          fi
-          
-          lunch aosp_raphael-userdebug || breakfast raphael eng || true
+          # PixelExperience tree already has aosp_raphael.mk
+          # Just run lunch directly
+          lunch aosp_raphael-userdebug
 
           # Free space
           rm -rf .repo || true
