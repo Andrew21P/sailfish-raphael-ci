@@ -224,37 +224,6 @@ jobs:
               $ANDROID_ROOT/device/xiaomi/raphael/BoardConfig.mk || true
           fi
           
-          # Create cc_defaults stubs IN THE DIRECTORIES THAT NEED THEM
-          # bootable/recovery needs bootloader_message_offset_defaults
-          {
-            echo '// Stub for hybris build'
-            echo 'cc_defaults {'
-            echo '    name: "bootloader_message_offset_defaults",'
-            echo '}'
-          } > $ANDROID_ROOT/bootable/recovery/bootloader_message/hybris_stub.bp
-          
-          # system/vold needs vold_hw_fde_defaults
-          {
-            echo '// Stub for hybris build'
-            echo 'cc_defaults {'
-            echo '    name: "vold_hw_fde_defaults",'
-            echo '}'
-            echo 'cc_defaults {'
-            echo '    name: "vold_hw_fde_perf_defaults",'
-            echo '}'
-          } > $ANDROID_ROOT/system/vold/hybris_stub.bp
-          
-          # bionic/linker needs lineage defaults
-          {
-            echo '// Stub for hybris build'
-            echo 'cc_defaults {'
-            echo '    name: "process_sdk_version_overrides_defaults",'
-            echo '}'
-            echo 'cc_defaults {'
-            echo '    name: "shim_libs_defaults",'
-            echo '}'
-          } > $ANDROID_ROOT/bionic/linker/hybris_stub.bp
-          
           # Remove lineage fingerprint inscreen dependency (causes build error)
           sed -i '/vendor.lineage.biometrics.fingerprint.inscreen/d' \
             $ANDROID_ROOT/device/xiaomi/raphael/device.mk || true
@@ -390,6 +359,35 @@ jobs:
             echo '# Stub for hybris build'
             echo '$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)'
           } > vendor/aosp/config/common_full_phone.mk
+          
+          #------------------------------------------
+          # CREATE ALL CC_DEFAULTS STUBS RIGHT BEFORE BUILD
+          # These must be created AFTER repo sync, in each directory
+          #------------------------------------------
+          echo "Creating cc_defaults stubs for hybris build..."
+          
+          # bootable/recovery needs bootloader_message_offset_defaults
+          echo 'cc_defaults { name: "bootloader_message_offset_defaults", }' > bootable/recovery/bootloader_message/hybris_stub.bp
+          
+          # system/vold needs vold_hw_fde_defaults
+          {
+            echo 'cc_defaults { name: "vold_hw_fde_defaults", }'
+            echo 'cc_defaults { name: "vold_hw_fde_perf_defaults", }'
+          } > system/vold/hybris_stub.bp
+          
+          # bionic/linker needs lineage defaults
+          {
+            echo 'cc_defaults { name: "process_sdk_version_overrides_defaults", }'
+            echo 'cc_defaults { name: "shim_libs_defaults", }'
+          } > bionic/linker/hybris_stub.bp
+          
+          # art/libartbase needs memfd backport
+          echo 'cc_defaults { name: "has_memfd_backport_defaults", }' > art/libartbase/hybris_stub.bp
+          
+          # frameworks/av stagefright needs qcom legacy
+          echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' > frameworks/av/media/libstagefright/omx/hybris_stub.bp
+          
+          echo "Stubs created."
           
           # Source the build environment
           set +e
