@@ -286,6 +286,10 @@ jobs:
           rm -rf vendor/lineage || true
           rm -rf vendor/codeaurora || true
           
+          # Create stub envsetup.sh that build/envsetup.sh tries to source
+          mkdir -p vendor/lineage/build
+          echo "# Stub - LineageOS removed for hybris build" > vendor/lineage/build/envsetup.sh
+          
           # Remove LineageOS overlay references from device trees
           find device/xiaomi -name "*.mk" -exec sed -i \
             -e '/XiaomiParts/d' \
