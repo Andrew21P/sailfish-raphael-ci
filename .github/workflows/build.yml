@@ -232,6 +232,18 @@ jobs:
             echo '}'
           } > $ANDROID_ROOT/device/xiaomi/raphael/bootloader_message_offset_defaults.bp
           
+          # Create stubs for LineageOS defaults removed with vendor/lineage
+          # These are needed by bionic/linker
+          {
+            echo '// Stubs for LineageOS-specific defaults (hybris build)'
+            echo 'cc_defaults {'
+            echo '    name: "process_sdk_version_overrides_defaults",'
+            echo '}'
+            echo 'cc_defaults {'
+            echo '    name: "shim_libs_defaults",'
+            echo '}'
+          } > $ANDROID_ROOT/device/xiaomi/raphael/lineage_stubs.bp
+          
           # Remove lineage fingerprint inscreen dependency (causes build error)
           sed -i '/vendor.lineage.biometrics.fingerprint.inscreen/d' \
             $ANDROID_ROOT/device/xiaomi/raphael/device.mk || true
