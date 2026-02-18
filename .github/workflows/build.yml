@@ -224,23 +224,36 @@ jobs:
               $ANDROID_ROOT/device/xiaomi/raphael/BoardConfig.mk || true
           fi
           
-          # Create ALL necessary cc_defaults stubs that might be missing
-          # These could be from vendor/lineage or device trees depending on manifest
+          # Create cc_defaults stubs IN THE DIRECTORIES THAT NEED THEM
+          # bootable/recovery needs bootloader_message_offset_defaults
           {
-            echo '// Stubs for cc_defaults that hybris-18.1 build expects'
+            echo '// Stub for hybris build'
             echo 'cc_defaults {'
             echo '    name: "bootloader_message_offset_defaults",'
             echo '}'
+          } > $ANDROID_ROOT/bootable/recovery/bootloader_message/hybris_stub.bp
+          
+          # system/vold needs vold_hw_fde_defaults
+          {
+            echo '// Stub for hybris build'
+            echo 'cc_defaults {'
+            echo '    name: "vold_hw_fde_defaults",'
+            echo '}'
+            echo 'cc_defaults {'
+            echo '    name: "vold_hw_fde_perf_defaults",'
+            echo '}'
+          } > $ANDROID_ROOT/system/vold/hybris_stub.bp
+          
+          # bionic/linker needs lineage defaults
+          {
+            echo '// Stub for hybris build'
             echo 'cc_defaults {'
             echo '    name: "process_sdk_version_overrides_defaults",'
             echo '}'
             echo 'cc_defaults {'
             echo '    name: "shim_libs_defaults",'
             echo '}'
-            echo 'cc_defaults {'
-            echo '    name: "lineage_go_defaults",'
-            echo '}'
-          } > $ANDROID_ROOT/device/xiaomi/raphael/hybris_stubs.bp
+          } > $ANDROID_ROOT/bionic/linker/hybris_stub.bp
           
           # Remove lineage fingerprint inscreen dependency (causes build error)
           sed -i '/vendor.lineage.biometrics.fingerprint.inscreen/d' \
