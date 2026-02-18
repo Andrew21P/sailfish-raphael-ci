@@ -224,25 +224,23 @@ jobs:
               $ANDROID_ROOT/device/xiaomi/raphael/BoardConfig.mk || true
           fi
           
-          # Create bootloader_message_offset_defaults stub (required by bootable/recovery)
+          # Create ALL necessary cc_defaults stubs that might be missing
+          # These could be from vendor/lineage or device trees depending on manifest
           {
-            echo '// Stub for bootloader_message_offset_defaults'
+            echo '// Stubs for cc_defaults that hybris-18.1 build expects'
             echo 'cc_defaults {'
             echo '    name: "bootloader_message_offset_defaults",'
             echo '}'
-          } > $ANDROID_ROOT/device/xiaomi/raphael/bootloader_message_offset_defaults.bp
-          
-          # Create stubs for LineageOS defaults removed with vendor/lineage
-          # These are needed by bionic/linker
-          {
-            echo '// Stubs for LineageOS-specific defaults (hybris build)'
             echo 'cc_defaults {'
             echo '    name: "process_sdk_version_overrides_defaults",'
             echo '}'
             echo 'cc_defaults {'
             echo '    name: "shim_libs_defaults",'
             echo '}'
-          } > $ANDROID_ROOT/device/xiaomi/raphael/lineage_stubs.bp
+            echo 'cc_defaults {'
+            echo '    name: "lineage_go_defaults",'
+            echo '}'
+          } > $ANDROID_ROOT/device/xiaomi/raphael/hybris_stubs.bp
           
           # Remove lineage fingerprint inscreen dependency (causes build error)
           sed -i '/vendor.lineage.biometrics.fingerprint.inscreen/d' \
@@ -362,21 +360,23 @@ jobs:
           #------------------------------------------
           sudo ln -sf /usr/bin/python2.7 /usr/bin/python || true
           
-          # CRITICAL: Remove vendor/lineage entirely (causes PATH_OVERRIDE_SOONG error)
-          # Then recreate only the minimal stub files needed
-          rm -rf vendor/lineage
-          mkdir -p vendor/lineage/build
-          echo 'function fixup_common_out_dir() { :; }' > vendor/lineage/build/envsetup.sh
+          # CRITICAL: Only remove the specific problematic file, NOT the whole vendor/lineage
+          # PATH_OVERRIDE_SOONG is in vendor/lineage/build/soong/Android.bp
+          rm -f vendor/lineage/build/soong/Android.bp || true
           
-          # Same for vendor/aosp
-          rm -rf vendor/aosp
+          # Create stub envsetup.sh if missing
+          mkdir -p vendor/lineage/build
+          if [ ! -f vendor/lineage/build/envsetup.sh ]; then
+            echo 'function fixup_common_out_dir() { :; }' > vendor/lineage/build/envsetup.sh
+          fi
+          
+          # Create vendor/aosp stubs for PE device tree
           mkdir -p vendor/aosp/build vendor/aosp/config
           echo 'function fixup_common_out_dir() { :; }' > vendor/aosp/build/envsetup.sh
           {
             echo '# Stub for hybris build'
             echo '$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)'
           } > vendor/aosp/config/common_full_phone.mk
-          echo 'function fixup_common_out_dir() { :; }' > vendor/aosp/build/envsetup.sh
           
           # Source the build environment
           set +e
