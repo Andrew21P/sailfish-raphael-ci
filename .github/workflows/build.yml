@@ -224,6 +224,14 @@ jobs:
               $ANDROID_ROOT/device/xiaomi/raphael/BoardConfig.mk || true
           fi
           
+          # Create bootloader_message_offset_defaults stub (required by bootable/recovery)
+          {
+            echo '// Stub for bootloader_message_offset_defaults'
+            echo 'cc_defaults {'
+            echo '    name: "bootloader_message_offset_defaults",'
+            echo '}'
+          } > $ANDROID_ROOT/device/xiaomi/raphael/bootloader_message_offset_defaults.bp
+          
           # Remove lineage fingerprint inscreen dependency (causes build error)
           sed -i '/vendor.lineage.biometrics.fingerprint.inscreen/d' \
             $ANDROID_ROOT/device/xiaomi/raphael/device.mk || true
