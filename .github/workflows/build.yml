@@ -217,10 +217,25 @@ jobs:
 
           # Create vendor/aosp stub (PE dependency)
           mkdir -p $ANDROID_ROOT/vendor/aosp/config
+          mkdir -p $ANDROID_ROOT/vendor/aosp/build
           {
             echo '# Stub - removed PE vendor for hybris build'
             echo '$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)'
           } > $ANDROID_ROOT/vendor/aosp/config/common_full_phone.mk
+          
+          # Create stub envsetup.sh with missing functions
+          {
+            echo '# Stub vendor envsetup for hybris'
+            echo 'function fixup_common_out_dir() { true; }'
+            echo 'function breakfast() { lunch "$1"; }'
+          } > $ANDROID_ROOT/vendor/aosp/build/envsetup.sh
+          
+          # Also add to vendor/lineage stub
+          {
+            echo '# Stub vendor envsetup for hybris'
+            echo 'function fixup_common_out_dir() { true; }'
+            echo 'function breakfast() { lunch "$1"; }'
+          } > $ANDROID_ROOT/vendor/lineage/build/envsetup.sh
 
           #------------------------------------------
           # Patch device tree for hybris compatibility
@@ -312,9 +327,13 @@ jobs:
           #------------------------------------------
           # Clean up ROM-specific dependencies for hybris
           #------------------------------------------
-          # Create stub envsetup.sh that build/envsetup.sh tries to source
+          # Create stub envsetup.sh with missing functions (build/envsetup.sh sources these)
           mkdir -p vendor/lineage/build
-          echo "# Stub - removed for hybris build" > vendor/lineage/build/envsetup.sh
+          {
+            echo '# Stub vendor envsetup for hybris'
+            echo 'function fixup_common_out_dir() { true; }'
+            echo 'function breakfast() { lunch "$@"; }'
+          } > vendor/lineage/build/envsetup.sh
           
           # Remove problematic PE/LineageOS-specific stuff
           rm -rf device/xiaomi/raphael/XiaomiParts || true
@@ -352,6 +371,12 @@ jobs:
           # Build HAL
           #------------------------------------------
           sudo ln -sf /usr/bin/python2.7 /usr/bin/python || true
+          
+          # Define missing functions that vendor envsetup.sh should provide
+          function fixup_common_out_dir() { true; }
+          function breakfast() { lunch "$@"; }
+          export -f fixup_common_out_dir breakfast
+          
           source build/envsetup.sh 2>&1
           
           # PixelExperience tree already has aosp_raphael.mk
