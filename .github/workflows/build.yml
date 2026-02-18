@@ -231,6 +231,7 @@ jobs:
           } > $ANDROID_ROOT/vendor/aosp/build/envsetup.sh
           
           # Also add to vendor/lineage stub
+          mkdir -p $ANDROID_ROOT/vendor/lineage/build
           {
             echo '# Stub vendor envsetup for hybris'
             echo 'function fixup_common_out_dir() { true; }'
@@ -327,14 +328,6 @@ jobs:
           #------------------------------------------
           # Clean up ROM-specific dependencies for hybris
           #------------------------------------------
-          # Create stub envsetup.sh with missing functions (build/envsetup.sh sources these)
-          mkdir -p vendor/lineage/build
-          {
-            echo '# Stub vendor envsetup for hybris'
-            echo 'function fixup_common_out_dir() { true; }'
-            echo 'function breakfast() { lunch "$@"; }'
-          } > vendor/lineage/build/envsetup.sh
-          
           # Remove problematic PE/LineageOS-specific stuff
           rm -rf device/xiaomi/raphael/XiaomiParts || true
           rm -rf device/xiaomi/raphael/parts || true
@@ -372,16 +365,24 @@ jobs:
           #------------------------------------------
           sudo ln -sf /usr/bin/python2.7 /usr/bin/python || true
           
-          # Define missing functions that vendor envsetup.sh should provide
-          function fixup_common_out_dir() { true; }
-          function breakfast() { lunch "$@"; }
-          export -f fixup_common_out_dir breakfast
+          # Patch vendor envsetup files with stub functions BEFORE sourcing
+          mkdir -p vendor/lineage/build vendor/aosp/build
+          echo 'function fixup_common_out_dir() { :; }' > vendor/lineage/build/envsetup.sh
+          echo 'function fixup_common_out_dir() { :; }' > vendor/aosp/build/envsetup.sh
           
+          # Source the build environment
+          set +e
           source build/envsetup.sh 2>&1
+          set -e
           
-          # PixelExperience tree already has aosp_raphael.mk
-          # Just run lunch directly
-          lunch aosp_raphael-userdebug
+          # Try lunch, fallback to manual TARGET setup
+          if ! lunch aosp_raphael-userdebug 2>/dev/null; then
+            echo "lunch failed, setting up environment manually..."
+            export TARGET_PRODUCT=aosp_raphael
+            export TARGET_BUILD_VARIANT=userdebug
+            export TARGET_BUILD_TYPE=release
+            export OUT_DIR=out
+          fi
 
           # Free space
           rm -rf .repo || true
