@@ -215,29 +215,6 @@ jobs:
           
           echo '# Stub BoardConfig for hybris' > $ANDROID_ROOT/vendor/xiaomi/raphael/BoardConfigVendor.mk
 
-          # Create vendor/aosp stub (PE dependency)
-          mkdir -p $ANDROID_ROOT/vendor/aosp/config
-          mkdir -p $ANDROID_ROOT/vendor/aosp/build
-          {
-            echo '# Stub - removed PE vendor for hybris build'
-            echo '$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)'
-          } > $ANDROID_ROOT/vendor/aosp/config/common_full_phone.mk
-          
-          # Create stub envsetup.sh with missing functions
-          {
-            echo '# Stub vendor envsetup for hybris'
-            echo 'function fixup_common_out_dir() { true; }'
-            echo 'function breakfast() { lunch "$1"; }'
-          } > $ANDROID_ROOT/vendor/aosp/build/envsetup.sh
-          
-          # Also add to vendor/lineage stub
-          mkdir -p $ANDROID_ROOT/vendor/lineage/build
-          {
-            echo '# Stub vendor envsetup for hybris'
-            echo 'function fixup_common_out_dir() { true; }'
-            echo 'function breakfast() { lunch "$1"; }'
-          } > $ANDROID_ROOT/vendor/lineage/build/envsetup.sh
-
           #------------------------------------------
           # Patch device tree for hybris compatibility
           #------------------------------------------
@@ -365,9 +342,20 @@ jobs:
           #------------------------------------------
           sudo ln -sf /usr/bin/python2.7 /usr/bin/python || true
           
-          # Patch vendor envsetup files with stub functions BEFORE sourcing
-          mkdir -p vendor/lineage/build vendor/aosp/build
+          # CRITICAL: Remove vendor/lineage entirely (causes PATH_OVERRIDE_SOONG error)
+          # Then recreate only the minimal stub files needed
+          rm -rf vendor/lineage
+          mkdir -p vendor/lineage/build
           echo 'function fixup_common_out_dir() { :; }' > vendor/lineage/build/envsetup.sh
+          
+          # Same for vendor/aosp
+          rm -rf vendor/aosp
+          mkdir -p vendor/aosp/build vendor/aosp/config
+          echo 'function fixup_common_out_dir() { :; }' > vendor/aosp/build/envsetup.sh
+          {
+            echo '# Stub for hybris build'
+            echo '$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)'
+          } > vendor/aosp/config/common_full_phone.mk
           echo 'function fixup_common_out_dir() { :; }' > vendor/aosp/build/envsetup.sh
           
           # Source the build environment
