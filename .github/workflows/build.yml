@@ -339,17 +339,17 @@ jobs:
           # Use AOSP target since we removed LineageOS deps
           # Create minimal product makefile if needed
           if [ ! -f "device/xiaomi/raphael/aosp_raphael.mk" ]; then
-            cat > device/xiaomi/raphael/aosp_raphael.mk << 'AOSP_MK'
-# Minimal AOSP product for hybris build
-$(call inherit-product, device/xiaomi/raphael/device.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)
-
-PRODUCT_NAME := aosp_raphael
-PRODUCT_DEVICE := raphael
-PRODUCT_BRAND := Xiaomi
-PRODUCT_MODEL := Mi 9T Pro
-PRODUCT_MANUFACTURER := Xiaomi
-AOSP_MK
+            {
+              echo '# Minimal AOSP product for hybris build'
+              echo '$(call inherit-product, device/xiaomi/raphael/device.mk)'
+              echo '$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)'
+              echo ''
+              echo 'PRODUCT_NAME := aosp_raphael'
+              echo 'PRODUCT_DEVICE := raphael'
+              echo 'PRODUCT_BRAND := Xiaomi'
+              echo 'PRODUCT_MODEL := Mi 9T Pro'
+              echo 'PRODUCT_MANUFACTURER := Xiaomi'
+            } > device/xiaomi/raphael/aosp_raphael.mk
           fi
           
           # Update AndroidProducts.mk to include aosp target
