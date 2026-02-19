@@ -362,34 +362,50 @@ jobs:
           
           #------------------------------------------
           # CREATE ALL CC_DEFAULTS STUBS RIGHT BEFORE BUILD
-          # These must be created AFTER repo sync, in each directory
+          # Comprehensive list to avoid endless fixing
           #------------------------------------------
           echo "Creating cc_defaults stubs for hybris build..."
           
-          # bootable/recovery needs bootloader_message_offset_defaults
-          echo 'cc_defaults { name: "bootloader_message_offset_defaults", }' > bootable/recovery/bootloader_message/hybris_stub.bp
-          
-          # system/vold needs vold_hw_fde_defaults
+          # Create one comprehensive stub file in device tree (gets scanned by soong)
           {
+            echo '// Comprehensive cc_defaults stubs for hybris-18.1 build'
+            echo 'cc_defaults { name: "bootloader_message_offset_defaults", }'
             echo 'cc_defaults { name: "vold_hw_fde_defaults", }'
             echo 'cc_defaults { name: "vold_hw_fde_perf_defaults", }'
-          } > system/vold/hybris_stub.bp
-          
-          # bionic/linker needs lineage defaults
-          {
             echo 'cc_defaults { name: "process_sdk_version_overrides_defaults", }'
             echo 'cc_defaults { name: "shim_libs_defaults", }'
-          } > bionic/linker/hybris_stub.bp
+            echo 'cc_defaults { name: "has_memfd_backport_defaults", }'
+            echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }'
+            echo 'cc_defaults { name: "librmnetctl_pre_uplink_defaults", }'
+            echo 'cc_defaults { name: "lineage_go_defaults", }'
+            echo 'cc_defaults { name: "generated_kernel_includes", }'
+            echo 'cc_defaults { name: "qti_kernel_headers_defaults", }'
+            echo 'cc_defaults { name: "libhidl_defaults", }'
+            echo 'cc_defaults { name: "target_fs_config_gen_defaults", }'
+            echo 'cc_defaults { name: "sdclang_defaults", }'
+          } > device/xiaomi/raphael/hybris_stubs.bp
+
+          # Also place stub files in specific directories for safety
+          echo 'cc_defaults { name: "bootloader_message_offset_defaults", }' > bootable/recovery/bootloader_message/hybris_stub.bp || true
           
-          # art/libartbase needs memfd backport
-          echo 'cc_defaults { name: "has_memfd_backport_defaults", }' > art/libartbase/hybris_stub.bp
+          mkdir -p system/vold
+          echo 'cc_defaults { name: "vold_hw_fde_defaults", }' > system/vold/hybris_stub.bp || true
+          echo 'cc_defaults { name: "vold_hw_fde_perf_defaults", }' >> system/vold/hybris_stub.bp || true
           
-          # frameworks/av stagefright needs qcom legacy - ensure directory exists
+          mkdir -p bionic/linker
+          echo 'cc_defaults { name: "process_sdk_version_overrides_defaults", }' > bionic/linker/hybris_stub.bp || true
+          echo 'cc_defaults { name: "shim_libs_defaults", }' >> bionic/linker/hybris_stub.bp || true
+          
+          mkdir -p art/libartbase
+          echo 'cc_defaults { name: "has_memfd_backport_defaults", }' > art/libartbase/hybris_stub.bp || true
+          
           mkdir -p frameworks/av/media/libstagefright/omx
-          echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' > frameworks/av/media/libstagefright/omx/hybris_stub.bp
+          mkdir -p frameworks/av/media/libstagefright/bqhelper
+          echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' > frameworks/av/media/libstagefright/omx/hybris_stub.bp || true
+          echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' > frameworks/av/media/libstagefright/bqhelper/hybris_stub.bp || true
           
-          # Also add stagefright stub to device tree as backup (soong scans all directories)
-          echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' >> device/xiaomi/raphael/hybris_stub.bp 2>/dev/null || true
+          mkdir -p vendor/qcom/opensource/dataservices/rmnetctl
+          echo 'cc_defaults { name: "librmnetctl_pre_uplink_defaults", }' > vendor/qcom/opensource/dataservices/rmnetctl/hybris_stub.bp || true
           
           echo "Stubs created."
           
