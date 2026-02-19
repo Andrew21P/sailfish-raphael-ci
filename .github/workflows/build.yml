@@ -414,6 +414,8 @@ jobs:
             echo 'cc_defaults { name: "target_uses_prebuilt_dynamic_partitions_defaults", }'
             echo 'cc_defaults { name: "nvidia_enhancements_defaults", }'
             echo 'cc_defaults { name: "inputdispatcher_skip_event_key_defaults", }'
+            # Library headers stubs
+            echo 'cc_library_headers { name: "generated_kernel_headers", vendor_available: true, recovery_available: true, }'
           } > /tmp/hybris_stubs.bp
           
           echo "Created hybris_stubs.bp with all cc_defaults"
