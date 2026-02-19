@@ -418,61 +418,11 @@ jobs:
           echo "Created hybris_stubs.bp with all cc_defaults"
           cat /tmp/hybris_stubs.bp
 
-          # Put stubs in build/soong which is ALWAYS processed by soong
-          cp /tmp/hybris_stubs.bp build/soong/hybris_stubs.bp
-          echo "Copied to build/soong/hybris_stubs.bp"
-          
-          # Also put in device tree
+          # Put stubs in ONLY ONE place - device tree
+          # Soong scans ALL Android.bp files globally, so modules only need to exist once
           mkdir -p device/xiaomi/raphael
           cp /tmp/hybris_stubs.bp device/xiaomi/raphael/Android.bp
-          
-          # And vendor/xiaomi/raphael
-          mkdir -p vendor/xiaomi/raphael
-          cp /tmp/hybris_stubs.bp vendor/xiaomi/raphael/Android.bp
-
-          # APPEND stubs to existing Android.bp files (soong ONLY processes Android.bp!)
-          echo "" >> frameworks/native/opengl/libs/Android.bp
-          cat /tmp/hybris_stubs.bp >> frameworks/native/opengl/libs/Android.bp
-
-          echo "" >> frameworks/native/services/surfaceflinger/Android.bp
-          cat /tmp/hybris_stubs.bp >> frameworks/native/services/surfaceflinger/Android.bp
-
-          echo "" >> frameworks/av/media/libstagefright/omx/Android.bp
-          cat /tmp/hybris_stubs.bp >> frameworks/av/media/libstagefright/omx/Android.bp
-          
-          echo "" >> frameworks/av/media/libstagefright/bqhelper/Android.bp
-          cat /tmp/hybris_stubs.bp >> frameworks/av/media/libstagefright/bqhelper/Android.bp
-
-          echo "" >> frameworks/av/camera/Android.bp
-          cat /tmp/hybris_stubs.bp >> frameworks/av/camera/Android.bp
-          
-          echo "" >> hardware/interfaces/camera/provider/2.4/default/Android.bp
-          cat /tmp/hybris_stubs.bp >> hardware/interfaces/camera/provider/2.4/default/Android.bp
-
-          mkdir -p vendor/qcom/opensource/dataservices/rmnetctl
-          cp /tmp/hybris_stubs.bp vendor/qcom/opensource/dataservices/rmnetctl/Android.bp
-
-          mkdir -p vendor/qcom/opensource/cryptfs_hw
-          echo "" >> vendor/qcom/opensource/cryptfs_hw/Android.bp || cp /tmp/hybris_stubs.bp vendor/qcom/opensource/cryptfs_hw/Android.bp
-          cat /tmp/hybris_stubs.bp >> vendor/qcom/opensource/cryptfs_hw/Android.bp 2>/dev/null || true
-          
-          mkdir -p hardware/lineage/interfaces/cryptfshw/1.0/qsee
-          echo "" >> hardware/lineage/interfaces/cryptfshw/1.0/qsee/Android.bp || true
-          cat /tmp/hybris_stubs.bp >> hardware/lineage/interfaces/cryptfshw/1.0/qsee/Android.bp 2>/dev/null || true
-
-          echo "" >> bootable/recovery/bootloader_message/Android.bp || true
-          cat /tmp/hybris_stubs.bp >> bootable/recovery/bootloader_message/Android.bp 2>/dev/null || true
-          
-          echo "" >> system/vold/Android.bp || true
-          cat /tmp/hybris_stubs.bp >> system/vold/Android.bp 2>/dev/null || true
-          
-          echo "" >> bionic/linker/Android.bp || true
-          cat /tmp/hybris_stubs.bp >> bionic/linker/Android.bp 2>/dev/null || true
-          
-          echo "" >> art/libartbase/Android.bp || true
-          cat /tmp/hybris_stubs.bp >> art/libartbase/Android.bp 2>/dev/null || true
-
-          echo "Stubs APPENDED to all Android.bp files."
+          echo "Stubs placed in device/xiaomi/raphael/Android.bp ONLY"
           
           # Source the build environment
           set +e
