@@ -427,6 +427,9 @@ jobs:
           cp /tmp/hybris_stubs.bp device/xiaomi/raphael/Android.bp
           echo "Stubs placed in device/xiaomi/raphael/Android.bp ONLY"
           
+          # Fix namespace issue for fingerprint - remove it since not needed for hybris-hal
+          rm -f device/xiaomi/raphael/fingerprint/Android.bp || true
+          
           # Source the build environment
           set +e
           source build/envsetup.sh 2>&1
