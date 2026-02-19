@@ -413,64 +413,63 @@ jobs:
             echo 'cc_defaults { name: "target_uses_prebuilt_dynamic_partitions_defaults", }'
             echo 'cc_defaults { name: "nvidia_enhancements_defaults", }'
             echo 'cc_defaults { name: "inputdispatcher_skip_event_key_defaults", }'
-          } > hybris_stubs.bp
+          } > /tmp/hybris_stubs.bp
           
-          echo "Created root-level hybris_stubs.bp with all cc_defaults"
-          ls -la hybris_stubs.bp
-          cat hybris_stubs.bp
+          echo "Created hybris_stubs.bp with all cc_defaults"
+          cat /tmp/hybris_stubs.bp
 
-          # Also copy to device tree for good measure
+          # Put stubs in build/soong which is ALWAYS processed by soong
+          cp /tmp/hybris_stubs.bp build/soong/hybris_stubs.bp
+          echo "Copied to build/soong/hybris_stubs.bp"
+          
+          # Also put in device tree
           mkdir -p device/xiaomi/raphael
-          cp hybris_stubs.bp device/xiaomi/raphael/hybris_stubs.bp
+          cp /tmp/hybris_stubs.bp device/xiaomi/raphael/hybris_stubs.bp
+          
+          # And vendor/xiaomi/raphael
+          mkdir -p vendor/xiaomi/raphael
+          cp /tmp/hybris_stubs.bp vendor/xiaomi/raphael/hybris_stubs.bp
 
-          # Place stubs in frameworks/native for libEGL
+          # Place FULL stubs in ALL directories that have modules depending on them
           mkdir -p frameworks/native/opengl/libs
-          echo 'cc_defaults { name: "nvidia_enhancements_defaults", }' > frameworks/native/opengl/libs/hybris_stub.bp
+          cp /tmp/hybris_stubs.bp frameworks/native/opengl/libs/hybris_stub.bp
 
-          # Place stubs in frameworks/native/services/surfaceflinger
           mkdir -p frameworks/native/services/surfaceflinger
-          {
-            echo 'cc_defaults { name: "disable_postrender_cleanup_defaults", }'
-            echo 'cc_defaults { name: "surfaceflinger_qcom_ext_defaults", }'
-            echo 'cc_defaults { name: "surfaceflinger_fod_lib_defaults", }'
-            echo 'cc_defaults { name: "surfaceflinger_udfps_lib_defaults", }'
-          } > frameworks/native/services/surfaceflinger/hybris_stub.bp
-
-          # Also place stub files in specific directories for safety
-          echo 'cc_defaults { name: "bootloader_message_offset_defaults", }' > bootable/recovery/bootloader_message/hybris_stub.bp || true
-          
-          mkdir -p system/vold
-          echo 'cc_defaults { name: "vold_hw_fde_defaults", }' > system/vold/hybris_stub.bp || true
-          echo 'cc_defaults { name: "vold_hw_fde_perf_defaults", }' >> system/vold/hybris_stub.bp || true
-          
-          mkdir -p bionic/linker
-          echo 'cc_defaults { name: "process_sdk_version_overrides_defaults", }' > bionic/linker/hybris_stub.bp || true
-          echo 'cc_defaults { name: "shim_libs_defaults", }' >> bionic/linker/hybris_stub.bp || true
-          
-          mkdir -p art/libartbase
-          echo 'cc_defaults { name: "has_memfd_backport_defaults", }' > art/libartbase/hybris_stub.bp || true
-          
-          # Camera stubs
-          mkdir -p frameworks/av/camera
-          {
-            echo 'cc_defaults { name: "camera_parameter_library_defaults", }'
-            echo 'cc_defaults { name: "camera_needs_client_info_defaults", }'
-            echo 'cc_defaults { name: "camera_needs_client_info_lib_defaults", }'
-            echo 'cc_defaults { name: "no_cameraserver_defaults", }'
-            echo 'cc_defaults { name: "camera_in_mediaserver_defaults", }'
-            echo 'cc_defaults { name: "needs_camera_boottime", }'
-            echo 'cc_defaults { name: "qti_camera_device_defaults", }'
-          } > frameworks/av/camera/hybris_stub.bp
+          cp /tmp/hybris_stubs.bp frameworks/native/services/surfaceflinger/hybris_stub.bp
 
           mkdir -p frameworks/av/media/libstagefright/omx
+          cp /tmp/hybris_stubs.bp frameworks/av/media/libstagefright/omx/hybris_stub.bp
+          
           mkdir -p frameworks/av/media/libstagefright/bqhelper
-          echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' > frameworks/av/media/libstagefright/omx/hybris_stub.bp || true
-          echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' > frameworks/av/media/libstagefright/bqhelper/hybris_stub.bp || true
+          cp /tmp/hybris_stubs.bp frameworks/av/media/libstagefright/bqhelper/hybris_stub.bp
+
+          mkdir -p frameworks/av/camera
+          cp /tmp/hybris_stubs.bp frameworks/av/camera/hybris_stub.bp
           
+          mkdir -p hardware/interfaces/camera/provider/2.4/default
+          cp /tmp/hybris_stubs.bp hardware/interfaces/camera/provider/2.4/default/hybris_stub.bp
+
           mkdir -p vendor/qcom/opensource/dataservices/rmnetctl
-          echo 'cc_defaults { name: "librmnetctl_pre_uplink_defaults", }' > vendor/qcom/opensource/dataservices/rmnetctl/hybris_stub.bp || true
+          cp /tmp/hybris_stubs.bp vendor/qcom/opensource/dataservices/rmnetctl/hybris_stub.bp
+
+          mkdir -p vendor/qcom/opensource/cryptfs_hw
+          cp /tmp/hybris_stubs.bp vendor/qcom/opensource/cryptfs_hw/hybris_stub.bp
           
-          echo "Stubs created."
+          mkdir -p hardware/lineage/interfaces/cryptfshw/1.0/qsee
+          cp /tmp/hybris_stubs.bp hardware/lineage/interfaces/cryptfshw/1.0/qsee/hybris_stub.bp
+
+          cp /tmp/hybris_stubs.bp bootable/recovery/bootloader_message/hybris_stub.bp || true
+          
+          mkdir -p system/vold
+          cp /tmp/hybris_stubs.bp system/vold/hybris_stub.bp
+          
+          mkdir -p bionic/linker
+          cp /tmp/hybris_stubs.bp bionic/linker/hybris_stub.bp
+          
+          mkdir -p art/libartbase
+          cp /tmp/hybris_stubs.bp art/libartbase/hybris_stub.bp
+
+          echo "Stubs created in build/soong and all dependent directories."
           
           # Source the build environment
           set +e
