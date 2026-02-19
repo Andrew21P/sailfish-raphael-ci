@@ -402,6 +402,7 @@ jobs:
             echo 'cc_defaults { name: "no_cameraserver_defaults", }'
             echo 'cc_defaults { name: "camera_in_mediaserver_defaults", }'
             echo 'cc_defaults { name: "needs_camera_boottime", }'
+            echo 'cc_defaults { name: "needs_camera_boottime_defaults", }'
             # Display/graphics defaults
             echo 'cc_defaults { name: "gralloc_10_usage_bits_defaults", }'
             echo 'cc_defaults { name: "surfaceflinger_fod_lib_defaults", }'
