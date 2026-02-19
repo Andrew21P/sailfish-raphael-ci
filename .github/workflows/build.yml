@@ -384,8 +384,12 @@ jobs:
           # art/libartbase needs memfd backport
           echo 'cc_defaults { name: "has_memfd_backport_defaults", }' > art/libartbase/hybris_stub.bp
           
-          # frameworks/av stagefright needs qcom legacy
+          # frameworks/av stagefright needs qcom legacy - ensure directory exists
+          mkdir -p frameworks/av/media/libstagefright/omx
           echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' > frameworks/av/media/libstagefright/omx/hybris_stub.bp
+          
+          # Also add stagefright stub to device tree as backup (soong scans all directories)
+          echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' >> device/xiaomi/raphael/hybris_stub.bp 2>/dev/null || true
           
           echo "Stubs created."
           
