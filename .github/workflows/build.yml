@@ -367,26 +367,53 @@ jobs:
           echo "Creating cc_defaults stubs for hybris build..."
           
           # Create one comprehensive stub file in device tree (gets scanned by soong)
+          # Full list from vendor/lineage and vendor/aosp Android.bp files
           {
             echo '// Comprehensive cc_defaults stubs for hybris-18.1 build'
+            echo '// Based on vendor/lineage and vendor/aosp soong modules'
+            echo ''
+            # Core defaults
             echo 'cc_defaults { name: "bootloader_message_offset_defaults", }'
             echo 'cc_defaults { name: "vold_hw_fde_defaults", }'
             echo 'cc_defaults { name: "vold_hw_fde_perf_defaults", }'
             echo 'cc_defaults { name: "process_sdk_version_overrides_defaults", }'
             echo 'cc_defaults { name: "shim_libs_defaults", }'
             echo 'cc_defaults { name: "has_memfd_backport_defaults", }'
-            echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }'
-            echo 'cc_defaults { name: "librmnetctl_pre_uplink_defaults", }'
             echo 'cc_defaults { name: "lineage_go_defaults", }'
-            echo 'cc_defaults { name: "generated_kernel_includes", }'
-            echo 'cc_defaults { name: "qti_kernel_headers_defaults", }'
-            echo 'cc_defaults { name: "libhidl_defaults", }'
             echo 'cc_defaults { name: "target_fs_config_gen_defaults", }'
             echo 'cc_defaults { name: "sdclang_defaults", }'
+            echo 'cc_defaults { name: "libhidl_defaults", }'
+            echo 'cc_defaults { name: "vendor_init_defaults", }'
+            # Qcom specific
+            echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }'
+            echo 'cc_defaults { name: "librmnetctl_pre_uplink_defaults", }'
             echo 'cc_defaults { name: "disable_postrender_cleanup_defaults", }'
             echo 'cc_defaults { name: "surfaceflinger_qcom_ext_defaults", }'
             echo 'cc_defaults { name: "legacy_hw_disk_encryption_defaults", }'
             echo 'cc_defaults { name: "qti_cryptfshw_qsee_defaults", }'
+            echo 'cc_defaults { name: "qti_camera_device_defaults", }'
+            echo 'cc_defaults { name: "qti_usb_hal_supported_modes_defaults", }'
+            echo 'cc_defaults { name: "extended_compress_format_defaults", }'
+            echo 'cc_defaults { name: "qti_kernel_headers_defaults", }'
+            echo 'cc_defaults { name: "generated_kernel_includes", }'
+            # Camera defaults
+            echo 'cc_defaults { name: "camera_needs_client_info_defaults", }'
+            echo 'cc_defaults { name: "camera_needs_client_info_lib_defaults", }'
+            echo 'cc_defaults { name: "camera_parameter_library_defaults", }'
+            echo 'cc_defaults { name: "no_cameraserver_defaults", }'
+            echo 'cc_defaults { name: "camera_in_mediaserver_defaults", }'
+            echo 'cc_defaults { name: "needs_camera_boottime", }'
+            # Display/graphics defaults
+            echo 'cc_defaults { name: "gralloc_10_usage_bits_defaults", }'
+            echo 'cc_defaults { name: "surfaceflinger_fod_lib_defaults", }'
+            echo 'cc_defaults { name: "surfaceflinger_udfps_lib_defaults", }'
+            # Network defaults
+            echo 'cc_defaults { name: "needs_netd_direct_connect_rule_defaults", }'
+            echo 'cc_defaults { name: "ignores_ftp_pptp_conntrack_failure", }'
+            # Misc defaults
+            echo 'cc_defaults { name: "target_uses_prebuilt_dynamic_partitions_defaults", }'
+            echo 'cc_defaults { name: "nvidia_enhancements_defaults", }'
+            echo 'cc_defaults { name: "inputdispatcher_skip_event_key_defaults", }'
           } > device/xiaomi/raphael/hybris_stubs.bp
 
           # Also place stub files in specific directories for safety
