@@ -424,52 +424,55 @@ jobs:
           
           # Also put in device tree
           mkdir -p device/xiaomi/raphael
-          cp /tmp/hybris_stubs.bp device/xiaomi/raphael/hybris_stubs.bp
+          cp /tmp/hybris_stubs.bp device/xiaomi/raphael/Android.bp
           
           # And vendor/xiaomi/raphael
           mkdir -p vendor/xiaomi/raphael
-          cp /tmp/hybris_stubs.bp vendor/xiaomi/raphael/hybris_stubs.bp
+          cp /tmp/hybris_stubs.bp vendor/xiaomi/raphael/Android.bp
 
-          # Place FULL stubs in ALL directories that have modules depending on them
-          mkdir -p frameworks/native/opengl/libs
-          cp /tmp/hybris_stubs.bp frameworks/native/opengl/libs/hybris_stub.bp
+          # APPEND stubs to existing Android.bp files (soong ONLY processes Android.bp!)
+          echo "" >> frameworks/native/opengl/libs/Android.bp
+          cat /tmp/hybris_stubs.bp >> frameworks/native/opengl/libs/Android.bp
 
-          mkdir -p frameworks/native/services/surfaceflinger
-          cp /tmp/hybris_stubs.bp frameworks/native/services/surfaceflinger/hybris_stub.bp
+          echo "" >> frameworks/native/services/surfaceflinger/Android.bp
+          cat /tmp/hybris_stubs.bp >> frameworks/native/services/surfaceflinger/Android.bp
 
-          mkdir -p frameworks/av/media/libstagefright/omx
-          cp /tmp/hybris_stubs.bp frameworks/av/media/libstagefright/omx/hybris_stub.bp
+          echo "" >> frameworks/av/media/libstagefright/omx/Android.bp
+          cat /tmp/hybris_stubs.bp >> frameworks/av/media/libstagefright/omx/Android.bp
           
-          mkdir -p frameworks/av/media/libstagefright/bqhelper
-          cp /tmp/hybris_stubs.bp frameworks/av/media/libstagefright/bqhelper/hybris_stub.bp
+          echo "" >> frameworks/av/media/libstagefright/bqhelper/Android.bp
+          cat /tmp/hybris_stubs.bp >> frameworks/av/media/libstagefright/bqhelper/Android.bp
 
-          mkdir -p frameworks/av/camera
-          cp /tmp/hybris_stubs.bp frameworks/av/camera/hybris_stub.bp
+          echo "" >> frameworks/av/camera/Android.bp
+          cat /tmp/hybris_stubs.bp >> frameworks/av/camera/Android.bp
           
-          mkdir -p hardware/interfaces/camera/provider/2.4/default
-          cp /tmp/hybris_stubs.bp hardware/interfaces/camera/provider/2.4/default/hybris_stub.bp
+          echo "" >> hardware/interfaces/camera/provider/2.4/default/Android.bp
+          cat /tmp/hybris_stubs.bp >> hardware/interfaces/camera/provider/2.4/default/Android.bp
 
           mkdir -p vendor/qcom/opensource/dataservices/rmnetctl
-          cp /tmp/hybris_stubs.bp vendor/qcom/opensource/dataservices/rmnetctl/hybris_stub.bp
+          cp /tmp/hybris_stubs.bp vendor/qcom/opensource/dataservices/rmnetctl/Android.bp
 
           mkdir -p vendor/qcom/opensource/cryptfs_hw
-          cp /tmp/hybris_stubs.bp vendor/qcom/opensource/cryptfs_hw/hybris_stub.bp
+          echo "" >> vendor/qcom/opensource/cryptfs_hw/Android.bp || cp /tmp/hybris_stubs.bp vendor/qcom/opensource/cryptfs_hw/Android.bp
+          cat /tmp/hybris_stubs.bp >> vendor/qcom/opensource/cryptfs_hw/Android.bp 2>/dev/null || true
           
           mkdir -p hardware/lineage/interfaces/cryptfshw/1.0/qsee
-          cp /tmp/hybris_stubs.bp hardware/lineage/interfaces/cryptfshw/1.0/qsee/hybris_stub.bp
+          echo "" >> hardware/lineage/interfaces/cryptfshw/1.0/qsee/Android.bp || true
+          cat /tmp/hybris_stubs.bp >> hardware/lineage/interfaces/cryptfshw/1.0/qsee/Android.bp 2>/dev/null || true
 
-          cp /tmp/hybris_stubs.bp bootable/recovery/bootloader_message/hybris_stub.bp || true
+          echo "" >> bootable/recovery/bootloader_message/Android.bp || true
+          cat /tmp/hybris_stubs.bp >> bootable/recovery/bootloader_message/Android.bp 2>/dev/null || true
           
-          mkdir -p system/vold
-          cp /tmp/hybris_stubs.bp system/vold/hybris_stub.bp
+          echo "" >> system/vold/Android.bp || true
+          cat /tmp/hybris_stubs.bp >> system/vold/Android.bp 2>/dev/null || true
           
-          mkdir -p bionic/linker
-          cp /tmp/hybris_stubs.bp bionic/linker/hybris_stub.bp
+          echo "" >> bionic/linker/Android.bp || true
+          cat /tmp/hybris_stubs.bp >> bionic/linker/Android.bp 2>/dev/null || true
           
-          mkdir -p art/libartbase
-          cp /tmp/hybris_stubs.bp art/libartbase/hybris_stub.bp
+          echo "" >> art/libartbase/Android.bp || true
+          cat /tmp/hybris_stubs.bp >> art/libartbase/Android.bp 2>/dev/null || true
 
-          echo "Stubs created in build/soong and all dependent directories."
+          echo "Stubs APPENDED to all Android.bp files."
           
           # Source the build environment
           set +e
