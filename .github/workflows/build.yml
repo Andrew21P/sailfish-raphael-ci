@@ -416,6 +416,19 @@ jobs:
             echo 'cc_defaults { name: "inputdispatcher_skip_event_key_defaults", }'
           } > device/xiaomi/raphael/hybris_stubs.bp
 
+          # Place stubs in frameworks/native for libEGL
+          mkdir -p frameworks/native/opengl/libs
+          echo 'cc_defaults { name: "nvidia_enhancements_defaults", }' > frameworks/native/opengl/libs/hybris_stub.bp
+
+          # Place stubs in frameworks/native/services/surfaceflinger
+          mkdir -p frameworks/native/services/surfaceflinger
+          {
+            echo 'cc_defaults { name: "disable_postrender_cleanup_defaults", }'
+            echo 'cc_defaults { name: "surfaceflinger_qcom_ext_defaults", }'
+            echo 'cc_defaults { name: "surfaceflinger_fod_lib_defaults", }'
+            echo 'cc_defaults { name: "surfaceflinger_udfps_lib_defaults", }'
+          } > frameworks/native/services/surfaceflinger/hybris_stub.bp
+
           # Also place stub files in specific directories for safety
           echo 'cc_defaults { name: "bootloader_message_offset_defaults", }' > bootable/recovery/bootloader_message/hybris_stub.bp || true
           
@@ -430,6 +443,18 @@ jobs:
           mkdir -p art/libartbase
           echo 'cc_defaults { name: "has_memfd_backport_defaults", }' > art/libartbase/hybris_stub.bp || true
           
+          # Camera stubs
+          mkdir -p frameworks/av/camera
+          {
+            echo 'cc_defaults { name: "camera_parameter_library_defaults", }'
+            echo 'cc_defaults { name: "camera_needs_client_info_defaults", }'
+            echo 'cc_defaults { name: "camera_needs_client_info_lib_defaults", }'
+            echo 'cc_defaults { name: "no_cameraserver_defaults", }'
+            echo 'cc_defaults { name: "camera_in_mediaserver_defaults", }'
+            echo 'cc_defaults { name: "needs_camera_boottime", }'
+            echo 'cc_defaults { name: "qti_camera_device_defaults", }'
+          } > frameworks/av/camera/hybris_stub.bp
+
           mkdir -p frameworks/av/media/libstagefright/omx
           mkdir -p frameworks/av/media/libstagefright/bqhelper
           echo 'cc_defaults { name: "stagefright_qcom_legacy_defaults", }' > frameworks/av/media/libstagefright/omx/hybris_stub.bp || true
