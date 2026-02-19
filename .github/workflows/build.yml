@@ -366,8 +366,7 @@ jobs:
           #------------------------------------------
           echo "Creating cc_defaults stubs for hybris build..."
           
-          # Create one comprehensive stub file in device tree (gets scanned by soong)
-          # Full list from vendor/lineage and vendor/aosp Android.bp files
+          # Create a ROOT LEVEL stub file - soong scans all .bp files from root
           {
             echo '// Comprehensive cc_defaults stubs for hybris-18.1 build'
             echo '// Based on vendor/lineage and vendor/aosp soong modules'
@@ -414,7 +413,15 @@ jobs:
             echo 'cc_defaults { name: "target_uses_prebuilt_dynamic_partitions_defaults", }'
             echo 'cc_defaults { name: "nvidia_enhancements_defaults", }'
             echo 'cc_defaults { name: "inputdispatcher_skip_event_key_defaults", }'
-          } > device/xiaomi/raphael/hybris_stubs.bp
+          } > hybris_stubs.bp
+          
+          echo "Created root-level hybris_stubs.bp with all cc_defaults"
+          ls -la hybris_stubs.bp
+          cat hybris_stubs.bp
+
+          # Also copy to device tree for good measure
+          mkdir -p device/xiaomi/raphael
+          cp hybris_stubs.bp device/xiaomi/raphael/hybris_stubs.bp
 
           # Place stubs in frameworks/native for libEGL
           mkdir -p frameworks/native/opengl/libs
