@@ -179,6 +179,19 @@ jobs:
           git clone https://github.com/PixelExperience-Devices/kernel_xiaomi_raphael.git \
             $ANDROID_ROOT/kernel/xiaomi/raphael --depth=1 -b eleven
 
+          # Patch kernel IPA driver - fix copy_from_user buffer size mismatch (GCC 11+ issue)
+          # Error: __bad_copy_to in ipa_hw_stats.c:2072
+          if [ -f "$ANDROID_ROOT/kernel/xiaomi/raphael/drivers/platform/msm/ipa/ipa_v3/ipa_hw_stats.c" ]; then
+            echo "Patching IPA driver for GCC 11+ compatibility..."
+            # The issue is copy_from_user with mismatched buffer sizes in debugfs function
+            # Fix by increasing the local buffer size from 5 to 16 bytes
+            sed -i 's/char dbg_buff\[5\]/char dbg_buff[16]/g' \
+              $ANDROID_ROOT/kernel/xiaomi/raphael/drivers/platform/msm/ipa/ipa_v3/ipa_hw_stats.c
+            # Also fix any sizeof issues
+            sed -i 's/sizeof(dbg_buff) - 1/15/g' \
+              $ANDROID_ROOT/kernel/xiaomi/raphael/drivers/platform/msm/ipa/ipa_v3/ipa_hw_stats.c
+          fi
+
           # Hardware Xiaomi (LineageOS - used by PE too)
           rm -rf $ANDROID_ROOT/hardware/xiaomi || true
           git clone https://github.com/LineageOS/android_hardware_xiaomi.git \
