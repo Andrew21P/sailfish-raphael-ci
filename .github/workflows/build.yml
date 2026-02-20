@@ -471,6 +471,18 @@ jobs:
           printf '\xd7\xb7\xab\x1e\x00\x00\x00\x00\x00\x00\x00\x20\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' > out/target/product/raphael/dtbo.img
           echo "Created stub dtbo.img"
           
+          # Fix kernel build - add missing KERNEL_MAKE_CMD and KERNEL_ARCH to BoardConfig
+          if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
+            if ! grep -q "KERNEL_MAKE_CMD" device/xiaomi/raphael/BoardConfig.mk; then
+              echo "" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Fix kernel build for hybris" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "KERNEL_MAKE_CMD := make" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "TARGET_KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "Added kernel build variables to BoardConfig.mk"
+            fi
+          fi
+          
           # Source the build environment
           set +e
           source build/envsetup.sh 2>&1
