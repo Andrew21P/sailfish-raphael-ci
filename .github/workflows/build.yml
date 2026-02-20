@@ -135,7 +135,9 @@ jobs:
             libxml2 libxml2-utils lzop pngcrush rsync schedtool \
             squashfs-tools xsltproc yasm zip zlib1g-dev \
             qemu-user-static qemu-system-arm e2fsprogs simg2img \
-            libtinfo5 libncurses5 gzip virtualenv git python2
+            libtinfo5 libncurses5 gzip virtualenv git python2 \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+            gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
 
           # Setup JDK
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
@@ -479,6 +481,12 @@ jobs:
               echo "KERNEL_MAKE_CMD := make" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Cross compilers for kernel build" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "TARGET_KERNEL_CROSS_COMPILE_PREFIX := aarch64-linux-gnu-" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "KERNEL_CROSS_COMPILE := aarch64-linux-gnu-" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "CROSS_COMPILE_ARM32 := arm-linux-gnueabi-" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Disable clang for kernel (avoids CC=' clang' space issue)" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "TARGET_KERNEL_CLANG_COMPILE := false" >> device/xiaomi/raphael/BoardConfig.mk
               echo "Added kernel build variables to BoardConfig.mk"
             fi
           fi
