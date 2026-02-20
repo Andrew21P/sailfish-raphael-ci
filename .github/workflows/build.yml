@@ -135,9 +135,12 @@ jobs:
             libxml2 libxml2-utils lzop pngcrush rsync schedtool \
             squashfs-tools xsltproc yasm zip zlib1g-dev \
             qemu-user-static qemu-system-arm e2fsprogs simg2img \
-            libtinfo5 libncurses5 gzip virtualenv git python2 \
-            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-            gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
+            libtinfo5 libncurses5 gzip virtualenv git python2
+          
+          # Install GCC 9 cross-compilers (older GCC doesn't have strict FORTIFY checks)
+          sudo apt-get install -y gcc-9 g++-9
+          sudo apt-get install -y gcc-9-aarch64-linux-gnu g++-9-aarch64-linux-gnu
+          sudo apt-get install -y gcc-9-arm-linux-gnueabi g++-9-arm-linux-gnueabi
 
           # Setup JDK
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
@@ -519,9 +522,9 @@ jobs:
               echo "KERNEL_MAKE_CMD := make" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Cross compilers for kernel build - include variable names in value" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Cross compilers for kernel build - use GCC 9 to avoid FORTIFY issues" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_CROSS_COMPILE_PREFIX := aarch64-linux-gnu-" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "KERNEL_CROSS_COMPILE := CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-" >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_CROSS_COMPILE := CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CC=aarch64-linux-gnu-gcc-9 HOSTCC=gcc-9' >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX := arm-linux-gnueabi-" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Disable clang for kernel (avoids CC=' clang' space issue)" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_CLANG_COMPILE := false" >> device/xiaomi/raphael/BoardConfig.mk
@@ -530,8 +533,11 @@ jobs:
           fi
           
           # Export cross-compile variables for kernel build
+          # Export cross-compile variables for kernel build - use GCC 9
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          export CC=aarch64-linux-gnu-gcc-9
+          export HOSTCC=gcc-9
           
           # Source the build environment
           set +e
