@@ -465,6 +465,12 @@ jobs:
             ls -la kernel/xiaomi/raphael/arch/configs/
           fi
           
+          # Create dummy dtbo.img - hybris-boot needs it but we'll use stock dtbo
+          mkdir -p out/target/product/raphael
+          # Create a minimal valid dtbo.img (just a header)
+          printf '\xd7\xb7\xab\x1e\x00\x00\x00\x00\x00\x00\x00\x20\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' > out/target/product/raphael/dtbo.img
+          echo "Created stub dtbo.img"
+          
           # Source the build environment
           set +e
           source build/envsetup.sh 2>&1
