@@ -129,7 +129,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             openjdk-8-jdk android-tools-adb bc bison \
-            build-essential curl flex g++-multilib gcc-multilib gnupg gperf \
+            build-essential curl flex gnupg gperf \
             imagemagick lib32ncurses-dev lib32readline-dev lib32z1-dev \
             liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev \
             libxml2 libxml2-utils lzop pngcrush rsync schedtool \
