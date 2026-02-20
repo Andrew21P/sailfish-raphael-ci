@@ -436,6 +436,11 @@ jobs:
           done
           rm -rf vendor/qcom/opensource/wfd 2>/dev/null || true
           
+          # Remove chromium-webview reference (prebuilt not synced)
+          rm -rf external/chromium-webview 2>/dev/null || true
+          mkdir -p external/chromium-webview
+          echo "# Stub" > external/chromium-webview/Android.mk
+          
           # Source the build environment
           set +e
           source build/envsetup.sh 2>&1
