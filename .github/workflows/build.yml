@@ -181,39 +181,19 @@ jobs:
 
           # Patch kernel IPA driver - fix copy_from_user buffer size mismatch (GCC 11+ issue)
           # Error: __bad_copy_to in ipa_hw_stats.c:2072
-          if [ -f "$ANDROID_ROOT/kernel/xiaomi/raphael/drivers/platform/msm/ipa/ipa_v3/ipa_hw_stats.c" ]; then
+          IPA_FILE="$ANDROID_ROOT/kernel/xiaomi/raphael/drivers/platform/msm/ipa/ipa_v3/ipa_hw_stats.c"
+          if [ -f "$IPA_FILE" ]; then
             echo "Patching IPA driver for GCC 11+ compatibility..."
-            # Replace the specific function's copy_from_user to use min() for size
-            # The function ipa_debugfs_enable_disable_drop_stats has char dbg_buff[5] which is too small
-            # Use python to do a proper multiline patch
-            python3 << 'PATCH_EOF'
-import re
-filepath = "$ANDROID_ROOT/kernel/xiaomi/raphael/drivers/platform/msm/ipa/ipa_v3/ipa_hw_stats.c"
-with open(filepath, 'r') as f:
-    content = f.read()
-
-# Fix 1: Increase all small debugfs buffers in this file
-content = re.sub(r'char\s+dbg_buff\s*\[\s*(\d+)\s*\]', 'char dbg_buff[64]', content)
-
-# Fix 2: Also limit copy_from_user calls to use sizeof(dbg_buff)-1 instead of count
-# Pattern: copy_from_user(dbg_buff, ubuf, count) or similar
-content = re.sub(
-    r'copy_from_user\s*\(\s*dbg_buff\s*,\s*(\w+)\s*,\s*count\s*\)',
-    r'copy_from_user(dbg_buff, \1, min_t(size_t, count, sizeof(dbg_buff) - 1))',
-    content
-)
-
-with open(filepath, 'w') as f:
-    f.write(content)
-print("Patched ipa_hw_stats.c successfully")
-PATCH_EOF
+            # Fix: Increase all small debugfs buffer sizes to 64 bytes
+            sed -i -E 's/char[[:space:]]+dbg_buff[[:space:]]*\[[[:space:]]*[0-9]+[[:space:]]*\]/char dbg_buff[64]/g' "$IPA_FILE"
+            echo "Patched ipa_hw_stats.c buffer sizes"
           fi
 
-          # Also disable FORTIFY_SOURCE in defconfig as fallback for other similar issues
+          # Disable FORTIFY_SOURCE in defconfig as fallback for GCC 11+ issues
           DEFCONFIG="$ANDROID_ROOT/kernel/xiaomi/raphael/arch/arm64/configs/raphael_user_defconfig"
           if [ -f "$DEFCONFIG" ]; then
-            echo "# Disable FORTIFY_SOURCE for GCC 11+ compatibility" >> "$DEFCONFIG"
             echo "CONFIG_FORTIFY_SOURCE=n" >> "$DEFCONFIG"
+            echo "Disabled FORTIFY_SOURCE in defconfig"
           fi
 
           # Hardware Xiaomi (LineageOS - used by PE too)
