@@ -445,6 +445,26 @@ jobs:
           rm -f platform_testing/build/tasks/tests/instrumentation_test_list.mk 2>/dev/null || true
           touch platform_testing/build/tasks/tests/instrumentation_test_list.mk 2>/dev/null || true
           
+          # Fix kernel defconfig path - create expected symlink
+          # PE kernel has defconfig at arch/arm64/configs/vendor/raphael_defconfig
+          # Device tree expects arch/configs/raphael_user_defconfig
+          if [ -d kernel/xiaomi/raphael ]; then
+            mkdir -p kernel/xiaomi/raphael/arch/configs
+            # Try to find the actual defconfig
+            DEFCONFIG=$(find kernel/xiaomi/raphael -name "*raphael*defconfig" 2>/dev/null | head -1)
+            if [ -n "$DEFCONFIG" ]; then
+              cp "$DEFCONFIG" kernel/xiaomi/raphael/arch/configs/raphael_user_defconfig
+              echo "Copied $DEFCONFIG to arch/configs/raphael_user_defconfig"
+            else
+              # Create minimal defconfig pointing to arm64 defconfig
+              echo "# Redirect to actual defconfig" > kernel/xiaomi/raphael/arch/configs/raphael_user_defconfig
+              cat kernel/xiaomi/raphael/arch/arm64/configs/vendor/sm8150-perf_defconfig >> kernel/xiaomi/raphael/arch/configs/raphael_user_defconfig 2>/dev/null || \
+              cat kernel/xiaomi/raphael/arch/arm64/configs/raphael_defconfig >> kernel/xiaomi/raphael/arch/configs/raphael_user_defconfig 2>/dev/null || \
+              echo "CONFIG_LOCALVERSION=\"-hybris\"" > kernel/xiaomi/raphael/arch/configs/raphael_user_defconfig
+            fi
+            ls -la kernel/xiaomi/raphael/arch/configs/
+          fi
+          
           # Source the build environment
           set +e
           source build/envsetup.sh 2>&1
