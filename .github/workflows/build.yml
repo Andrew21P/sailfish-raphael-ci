@@ -182,11 +182,21 @@ jobs:
           # Patch kernel IPA driver - fix copy_from_user buffer size mismatch (GCC 11+ issue)
           # Error: __bad_copy_to in ipa_hw_stats.c:2072
           IPA_FILE="$ANDROID_ROOT/kernel/xiaomi/raphael/drivers/platform/msm/ipa/ipa_v3/ipa_hw_stats.c"
+          IPA_MAKEFILE="$ANDROID_ROOT/kernel/xiaomi/raphael/drivers/platform/msm/ipa/ipa_v3/Makefile"
+          
           if [ -f "$IPA_FILE" ]; then
             echo "Patching IPA driver for GCC 11+ compatibility..."
             # Fix: Increase all small debugfs buffer sizes to 64 bytes
             sed -i -E 's/char[[:space:]]+dbg_buff[[:space:]]*\[[[:space:]]*[0-9]+[[:space:]]*\]/char dbg_buff[64]/g' "$IPA_FILE"
             echo "Patched ipa_hw_stats.c buffer sizes"
+          fi
+          
+          # Add per-file CFLAGS to disable fortify for problematic file
+          if [ -f "$IPA_MAKEFILE" ]; then
+            echo "" >> "$IPA_MAKEFILE"
+            echo "# Disable FORTIFY_SOURCE for GCC 11+ compatibility" >> "$IPA_MAKEFILE"
+            echo 'CFLAGS_ipa_hw_stats.o += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -Wno-error' >> "$IPA_MAKEFILE"
+            echo "Added per-file CFLAGS to IPA Makefile"
           fi
 
           # Disable FORTIFY_SOURCE in defconfig - use scripts/config for reliable modification
