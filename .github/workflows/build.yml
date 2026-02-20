@@ -483,7 +483,7 @@ jobs:
               echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Cross compilers for kernel build - include variable names in value" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_CROSS_COMPILE_PREFIX := aarch64-linux-gnu-" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "KERNEL_CROSS_COMPILE := CROSS_COMPILE=aarch64-linux-gnu-" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "KERNEL_CROSS_COMPILE := CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX := arm-linux-gnueabi-" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Disable clang for kernel (avoids CC=' clang' space issue)" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_CLANG_COMPILE := false" >> device/xiaomi/raphael/BoardConfig.mk
