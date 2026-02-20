@@ -189,11 +189,22 @@ jobs:
             echo "Patched ipa_hw_stats.c buffer sizes"
           fi
 
-          # Disable FORTIFY_SOURCE in defconfig as fallback for GCC 11+ issues
+          # Disable FORTIFY_SOURCE in defconfig - use scripts/config for reliable modification
           DEFCONFIG="$ANDROID_ROOT/kernel/xiaomi/raphael/arch/arm64/configs/raphael_user_defconfig"
           if [ -f "$DEFCONFIG" ]; then
-            echo "CONFIG_FORTIFY_SOURCE=n" >> "$DEFCONFIG"
+            # Remove any existing FORTIFY_SOURCE config
+            sed -i '/CONFIG_FORTIFY_SOURCE/d' "$DEFCONFIG"
+            echo "# CONFIG_FORTIFY_SOURCE is not set" >> "$DEFCONFIG"
             echo "Disabled FORTIFY_SOURCE in defconfig"
+          fi
+          
+          # Add KCFLAGS to BoardConfig to disable FORTIFY at compile time as belt-and-suspenders
+          if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
+            if ! grep -q "KCFLAGS" device/xiaomi/raphael/BoardConfig.mk; then
+              echo "" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Disable FORTIFY_SOURCE for GCC 11+ kernel builds" >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_MAKE_FLAGS += KCFLAGS="-Wno-error -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0"' >> device/xiaomi/raphael/BoardConfig.mk
+            fi
           fi
 
           # Hardware Xiaomi (LineageOS - used by PE too)
