@@ -178,18 +178,6 @@ jobs:
           git clone https://github.com/PixelExperience-Devices/kernel_xiaomi_raphael.git \
             $ANDROID_ROOT/kernel/xiaomi/raphael --depth=1 -b eleven
 
-          # Download AOSP prebuilt GCC toolchains to separate location (don't overwrite manifest's prebuilts)
-          echo "Downloading AOSP GCC toolchains for kernel..."
-          mkdir -p $ANDROID_ROOT/prebuilts/gcc-kernel/aarch64
-          mkdir -p $ANDROID_ROOT/prebuilts/gcc-kernel/arm
-          rm -rf $ANDROID_ROOT/prebuilts/gcc-kernel/aarch64/aarch64-linux-android-4.9 || true
-          rm -rf $ANDROID_ROOT/prebuilts/gcc-kernel/arm/arm-linux-androideabi-4.9 || true
-          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 \
-            $ANDROID_ROOT/prebuilts/gcc-kernel/aarch64/aarch64-linux-android-4.9
-          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 \
-            $ANDROID_ROOT/prebuilts/gcc-kernel/arm/arm-linux-androideabi-4.9
-          echo "AOSP GCC toolchains downloaded to prebuilts/gcc-kernel/"
-
           # Patch kernel IPA driver - fix copy_from_user buffer size mismatch (GCC 11+ issue)
           # Error: __bad_copy_to in ipa_hw_stats.c:2072
           IPA_FILE="$ANDROID_ROOT/kernel/xiaomi/raphael/drivers/platform/msm/ipa/ipa_v3/ipa_hw_stats.c"
@@ -530,23 +518,26 @@ jobs:
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KERNEL_MAKE_CMD" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Fix kernel build for hybris - use AOSP prebuilt GCC toolchains" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Fix kernel build for hybris - use clang with system GCC cross-tools" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_MAKE_CMD := make" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
-              echo '# Use AOSP GCC toolchains - use $(CURDIR) for absolute path (make runs from kernel dir)' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'TARGET_KERNEL_CROSS_COMPILE_PREFIX := $(CURDIR)/prebuilts/gcc-kernel/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'KERNEL_CROSS_COMPILE := CROSS_COMPILE=$(CURDIR)/prebuilts/gcc-kernel/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android- CROSS_COMPILE_ARM32=$(CURDIR)/prebuilts/gcc-kernel/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX := $(CURDIR)/prebuilts/gcc-kernel/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-' >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Disable clang for kernel (use GCC)" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "TARGET_KERNEL_CLANG_COMPILE := false" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Use clang for kernel (avoids GCC 11 relocation errors)" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "TARGET_KERNEL_CLANG_COMPILE := true" >> device/xiaomi/raphael/BoardConfig.mk
+              echo '# Set clang path and cross-compile tools explicitly (no leading space in CC)' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'TARGET_KERNEL_CLANG_PATH := $(CURDIR)/prebuilts/clang/host/linux-x86/clang-r383902b1' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_CC := $(TARGET_KERNEL_CLANG_PATH)/bin/clang' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'TARGET_KERNEL_CROSS_COMPILE_PREFIX := aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_CROSS_COMPILE := CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX := arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_CLANG_TRIPLE := aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
               echo "Added kernel build variables to BoardConfig.mk"
             fi
           fi
           
-          # Export cross-compile variables for kernel build (AOSP toolchains - absolute paths)
-          export CROSS_COMPILE=$ANDROID_ROOT/prebuilts/gcc-kernel/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
-          export CROSS_COMPILE_ARM32=$ANDROID_ROOT/prebuilts/gcc-kernel/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
+          # Export cross-compile variables for kernel build (System GCC cross-compilers)
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           
           # Source the build environment
           set +e
