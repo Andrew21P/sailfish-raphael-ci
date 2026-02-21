@@ -557,17 +557,6 @@ jobs:
 
       - name: Upload HAL Artifacts
         uses: actions/upload-artifact@v4
-          set +e
-          source build/envsetup.sh 2>&1
-          set -e
-          # Try lunch, fallback to manual TARGET setup
-          if ! lunch aosp_raphael-userdebug 2>/dev/null; then
-            echo "lunch failed, setting up environment manually..."
-            export TARGET_PRODUCT=aosp_raphael
-            export TARGET_BUILD_VARIANT=userdebug
-            export TARGET_BUILD_TYPE=release
-            export OUT_DIR=out
-          fi
 
           # Free space
           rm -rf .repo || true
