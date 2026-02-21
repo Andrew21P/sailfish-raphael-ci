@@ -518,21 +518,21 @@ jobs:
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KERNEL_MAKE_CMD" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Fix kernel build for hybris - use clang with system GCC cross-tools" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Fix kernel build for hybris - use GCC cross-compilers" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_MAKE_CMD := make" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Use clang for kernel (avoids GCC 11 relocation errors)" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "TARGET_KERNEL_CLANG_COMPILE := true" >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'TARGET_KERNEL_CLANG_PATH := $(shell pwd)/prebuilts/clang/host/linux-x86/clang-r383902b1' >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Disable clang, use GCC cross-compilers" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "TARGET_KERNEL_CLANG_COMPILE := false" >> device/xiaomi/raphael/BoardConfig.mk
               echo 'TARGET_KERNEL_CROSS_COMPILE_PREFIX := aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_CROSS_COMPILE := aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX := arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_CROSS_COMPILE_ARM32 := arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
               echo "Added kernel build variables to BoardConfig.mk"
             fi
           fi
           
           # Export cross-compile variables for kernel build (System GCC cross-compilers)
-          export CC=clang
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           
