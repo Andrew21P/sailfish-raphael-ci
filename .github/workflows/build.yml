@@ -136,7 +136,8 @@ jobs:
             squashfs-tools xsltproc yasm zip zlib1g-dev \
             qemu-user-static qemu-system-arm e2fsprogs simg2img \
             libtinfo5 libncurses5 gzip virtualenv git python2 \
-            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+            clang lld llvm
 
           # Setup JDK
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
@@ -213,14 +214,17 @@ jobs:
             echo "Disabled FORTIFY_SOURCE, HARDENED_USERCOPY, and COMPAT_VDSO in defconfig"
           fi
           
-          # Add KCFLAGS and CROSS_COMPILE vars to BoardConfig for kernel build
+          # Add KCFLAGS and clang vars to BoardConfig for kernel build
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KCFLAGS" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Disable FORTIFY_SOURCE for GCC 11+ kernel builds and set cross-compilers" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Use clang for kernel build (avoids GCC 11 relocation errors)" >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += KCFLAGS="-Wno-error -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0"' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE=aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE_ARM32=arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_MAKE_FLAGS += CC=clang' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_MAKE_FLAGS += CLANG_TRIPLE=aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_MAKE_FLAGS += LD=ld.lld' >> device/xiaomi/raphael/BoardConfig.mk
             fi
           fi
 
@@ -518,25 +522,28 @@ jobs:
           printf '\xd7\xb7\xab\x1e\x00\x00\x00\x00\x00\x00\x00\x20\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' > out/target/product/raphael/dtbo.img
           echo "Created stub dtbo.img"
           
-          # Fix kernel build - add missing KERNEL_MAKE_CMD and KERNEL_ARCH to BoardConfig
+          # Fix kernel build - use system clang to avoid GCC 11 relocation errors
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KERNEL_MAKE_CMD" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Fix kernel build for hybris - use GCC cross-compilers" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Fix kernel build for hybris - use system clang" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_MAKE_CMD := make" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Disable clang, use GCC cross-compilers" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "TARGET_KERNEL_CLANG_COMPILE := false" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Use system clang for kernel (avoids GCC 11 relocation errors)" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "TARGET_KERNEL_CLANG_COMPILE := true" >> device/xiaomi/raphael/BoardConfig.mk
               echo 'TARGET_KERNEL_CROSS_COMPILE_PREFIX := aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX := arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
               echo "Added kernel build variables to BoardConfig.mk"
             fi
           fi
           
-          # Export cross-compile variables for kernel build (System GCC cross-compilers)
+          # Export cross-compile and clang variables for kernel build
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          export CC=clang
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          export LD=ld.lld
           
           # Source the build environment
           set +e
