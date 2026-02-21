@@ -219,7 +219,7 @@ jobs:
             if ! grep -q "KCFLAGS" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Use clang for kernel build (avoids GCC 11 relocation errors)" >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'KERNEL_MAKE_FLAGS += KCFLAGS="-Wno-error -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0"' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_MAKE_FLAGS += KCFLAGS="-Wno-error -Wno-unused-but-set-variable -Wno-unused-variable -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0"' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE=aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE_ARM32=arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CC=clang' >> device/xiaomi/raphael/BoardConfig.mk
