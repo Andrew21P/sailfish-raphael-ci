@@ -180,6 +180,10 @@ jobs:
 
           # Download AOSP prebuilt GCC toolchains (compatible with kernel, avoids relocation errors)
           echo "Downloading AOSP GCC toolchains..."
+          rm -rf $ANDROID_ROOT/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 || true
+          rm -rf $ANDROID_ROOT/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 || true
+          mkdir -p $ANDROID_ROOT/prebuilts/gcc/linux-x86/aarch64
+          mkdir -p $ANDROID_ROOT/prebuilts/gcc/linux-x86/arm
           git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 \
             $ANDROID_ROOT/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
           git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 \
