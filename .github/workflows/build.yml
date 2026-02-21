@@ -534,10 +534,10 @@ jobs:
               echo "KERNEL_MAKE_CMD := make" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Use AOSP GCC toolchains from gcc-kernel dir (separate from soong's)" >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'TARGET_KERNEL_CROSS_COMPILE_PREFIX := prebuilts/gcc-kernel/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'KERNEL_CROSS_COMPILE := CROSS_COMPILE=prebuilts/gcc-kernel/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android- CROSS_COMPILE_ARM32=prebuilts/gcc-kernel/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX := prebuilts/gcc-kernel/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo '# Use AOSP GCC toolchains - use $(CURDIR) for absolute path (make runs from kernel dir)' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'TARGET_KERNEL_CROSS_COMPILE_PREFIX := $(CURDIR)/prebuilts/gcc-kernel/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_CROSS_COMPILE := CROSS_COMPILE=$(CURDIR)/prebuilts/gcc-kernel/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android- CROSS_COMPILE_ARM32=$(CURDIR)/prebuilts/gcc-kernel/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX := $(CURDIR)/prebuilts/gcc-kernel/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-' >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Disable clang for kernel (use GCC)" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_CLANG_COMPILE := false" >> device/xiaomi/raphael/BoardConfig.mk
               echo "Added kernel build variables to BoardConfig.mk"
