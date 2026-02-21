@@ -224,7 +224,6 @@ jobs:
               echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE_ARM32=arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CC=clang' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CLANG_TRIPLE=aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'KERNEL_MAKE_FLAGS += LD=ld.lld' >> device/xiaomi/raphael/BoardConfig.mk
             fi
           fi
 
@@ -543,7 +542,6 @@ jobs:
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export CC=clang
           export CLANG_TRIPLE=aarch64-linux-gnu-
-          export LD=ld.lld
           
           # Source the build environment
           set +e
