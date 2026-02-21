@@ -519,18 +519,13 @@ jobs:
             if ! grep -q "KERNEL_MAKE_CMD" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Fix kernel build for hybris - use clang with system GCC cross-tools" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "KERNEL_MAKE_CMD := make" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Use clang for kernel (avoids GCC 11 relocation errors)" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_CLANG_COMPILE := true" >> device/xiaomi/raphael/BoardConfig.mk
-              echo '# Set clang path and cross-compile tools explicitly (no leading space in CC)' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'TARGET_KERNEL_CLANG_PATH := $(CURDIR)/prebuilts/clang/host/linux-x86/clang-r383902b1' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'KERNEL_CC := $(TARGET_KERNEL_CLANG_PATH)/bin/clang' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'TARGET_KERNEL_CLANG_PATH := $(shell pwd)/prebuilts/clang/host/linux-x86/clang-r383902b1' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'TARGET_KERNEL_CROSS_COMPILE_PREFIX := aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'KERNEL_CROSS_COMPILE := CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX := arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'KERNEL_CLANG_TRIPLE := aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
               echo "Added kernel build variables to BoardConfig.mk"
             fi
           fi
