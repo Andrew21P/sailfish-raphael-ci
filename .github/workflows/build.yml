@@ -206,17 +206,21 @@ jobs:
             # Remove any existing related configs
             sed -i '/CONFIG_FORTIFY_SOURCE/d' "$DEFCONFIG"
             sed -i '/CONFIG_HARDENED_USERCOPY/d' "$DEFCONFIG"
+            sed -i '/CONFIG_COMPAT_VDSO/d' "$DEFCONFIG"
             echo "# CONFIG_FORTIFY_SOURCE is not set" >> "$DEFCONFIG"
             echo "# CONFIG_HARDENED_USERCOPY is not set" >> "$DEFCONFIG"
-            echo "Disabled FORTIFY_SOURCE and HARDENED_USERCOPY in defconfig"
+            echo "# CONFIG_COMPAT_VDSO is not set" >> "$DEFCONFIG"
+            echo "Disabled FORTIFY_SOURCE, HARDENED_USERCOPY, and COMPAT_VDSO in defconfig"
           fi
           
-          # Add KCFLAGS to BoardConfig to disable FORTIFY at compile time as belt-and-suspenders
+          # Add KCFLAGS and CROSS_COMPILE vars to BoardConfig for kernel build
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KCFLAGS" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
-              echo "# Disable FORTIFY_SOURCE for GCC 11+ kernel builds" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "# Disable FORTIFY_SOURCE for GCC 11+ kernel builds and set cross-compilers" >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += KCFLAGS="-Wno-error -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0"' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE=aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE_ARM32=arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
             fi
           fi
 
