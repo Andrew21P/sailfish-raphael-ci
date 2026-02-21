@@ -519,6 +519,7 @@ jobs:
             if ! grep -q "KERNEL_MAKE_CMD" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Fix kernel build for hybris - use clang with system GCC cross-tools" >> device/xiaomi/raphael/BoardConfig.mk
+              echo "KERNEL_MAKE_CMD := make" >> device/xiaomi/raphael/BoardConfig.mk
               echo "TARGET_KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "KERNEL_ARCH := arm64" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Use clang for kernel (avoids GCC 11 relocation errors)" >> device/xiaomi/raphael/BoardConfig.mk
