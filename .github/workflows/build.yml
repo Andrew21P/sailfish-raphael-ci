@@ -557,16 +557,15 @@ jobs:
 
       - name: Upload HAL Artifacts
         uses: actions/upload-artifact@v4
+        with:
+          name: hal-output
+          path: |
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/hybris-boot.img
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/droidmedia*.tgz
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/*.img
+          retention-days: 14
 
-          # Free space
-          rm -rf .repo || true
-
-          # Kernel build env fix
-          export CC=clang
-          export CROSS_COMPILE=aarch64-linux-gnu-
-          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-
-          make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot
+  build-dhd:
     needs: build-hal
     runs-on: ubuntu-22.04
     steps:
