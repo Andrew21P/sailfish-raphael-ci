@@ -254,19 +254,39 @@ jobs:
             sed -i 's/__section("[^"]*rtic[^"]*")//g' "$SELINUX_HOOKS"
           fi
           
-          # Method 4: Patch the linker script to merge .bss.rtic into .bss
+          # Method 4: Patch the linker script to include .bss.rtic within .bss section
           VMLINUX_LDS="$ANDROID_ROOT/kernel/xiaomi/raphael/arch/arm64/kernel/vmlinux.lds.S"
           if [ -f "$VMLINUX_LDS" ]; then
-            echo "Checking vmlinux.lds.S for .bss.rtic..."
-            grep -n "rtic" "$VMLINUX_LDS" || true
+            echo "=== BEFORE: vmlinux.lds.S content ==="
+            cat "$VMLINUX_LDS"
+            echo "=== END vmlinux.lds.S ==="
+            
+            # Comment out any .bss.rtic special section so it merges with .bss
+            sed -i 's/\.bss\.rtic/DISABLED_bss_rtic/g' "$VMLINUX_LDS"
+            
+            echo "After linker script patch (disabled .bss.rtic references)"
           fi
+          
+          # Method 5: Find and show the selinux include that adds RTIC
+          SELINUX_INCLUDE="$ANDROID_ROOT/kernel/xiaomi/raphael/security/selinux/include/security.h"
+          if [ -f "$SELINUX_INCLUDE" ]; then
+            echo "=== security.h content (selinux_state definition) ==="
+            cat "$SELINUX_INCLUDE"
+            echo "=== END security.h ==="
+            # Remove any RTIC-related macros from the extern declaration
+            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$SELINUX_INCLUDE"
+          fi
+          
+          # Method 6: Override RTIC via CFLAGS - redefine the macro to nothing
+          # This ensures any RTIC_MP_CACHE_SECTION usage becomes empty
+          echo "Adding RTIC disable flags to kernel build..."
           
           # Add KCFLAGS and clang vars to BoardConfig for kernel build
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KCFLAGS" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Use clang for kernel build (avoids GCC 11 relocation errors)" >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'KERNEL_MAKE_FLAGS += KCFLAGS="-Wno-error -Wno-unused-but-set-variable -Wno-unused-variable -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0"' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_MAKE_FLAGS += KCFLAGS="-Wno-error -Wno-unused-but-set-variable -Wno-unused-variable -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -DRTIC_MP_CACHE_SECTION="' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE=aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE_ARM32=arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CC=clang' >> device/xiaomi/raphael/BoardConfig.mk
