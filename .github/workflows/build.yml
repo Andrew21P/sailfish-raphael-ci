@@ -218,21 +218,47 @@ jobs:
             echo "Disabled FORTIFY_SOURCE, HARDENED_USERCOPY, COMPAT_VDSO, MODVERSIONS, and QCOM_RTIC in defconfig"
           fi
           
-          # Patch selinux_state to remove RTIC section attribute (fixes relocation overflow)
-          SELINUX_HOOKS="$ANDROID_ROOT/kernel/xiaomi/raphael/security/selinux/hooks.c"
-          if [ -f "$SELINUX_HOOKS" ]; then
-            # Remove __section(".bss.rtic") or __section(.bss.rtic) attribute from selinux_state
-            sed -i 's/__section("[^"]*rtic[^"]*")//g' "$SELINUX_HOOKS"
-            sed -i 's/__section([^)]*rtic[^)]*)//g' "$SELINUX_HOOKS"
-            echo "Patched selinux hooks.c to remove RTIC section attributes"
-          fi
+          # Patch RTIC to fix selinux_state relocation overflow
+          # The .bss.rtic section is placed too far from code, causing R_AARCH64_ADR_PREL_PG_HI21 overflow
           
-          # Also check include/linux/rtic_mp.h for the macro definition
+          # Method 1: Patch the RTIC header to make section macro empty
           RTIC_MP="$ANDROID_ROOT/kernel/xiaomi/raphael/include/linux/rtic_mp.h"
           if [ -f "$RTIC_MP" ]; then
-            # Make RTIC_MP_CACHE_SECTION empty
-            sed -i 's/#define RTIC_MP_CACHE_SECTION.*/#define RTIC_MP_CACHE_SECTION/g' "$RTIC_MP"
-            echo "Patched rtic_mp.h to disable RTIC section"
+            echo "Found rtic_mp.h, patching..."
+            cat "$RTIC_MP" | head -50
+            # Replace RTIC_MP_CACHE_SECTION definition with empty
+            sed -i 's/RTIC_MP_CACHE_SECTION[[:space:]]*__section.*$/RTIC_MP_CACHE_SECTION/g' "$RTIC_MP"
+            # Also try removing any __section in RTIC_MP macros
+            sed -i 's/__section(".bss.rtic")//g' "$RTIC_MP"
+            sed -i "s/__section('.bss.rtic')//g" "$RTIC_MP"
+            echo "After patch:"
+            cat "$RTIC_MP" | head -50
+          fi
+          
+          # Method 2: Directly patch selinux/ss/services.c where selinux_state is declared
+          SELINUX_SS="$ANDROID_ROOT/kernel/xiaomi/raphael/security/selinux/ss/services.c"
+          if [ -f "$SELINUX_SS" ]; then
+            echo "Checking services.c for selinux_state..."
+            grep -n "selinux_state" "$SELINUX_SS" | head -10 || true
+            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$SELINUX_SS"
+          fi
+          
+          # Method 3: Patch hooks.c directly
+          SELINUX_HOOKS="$ANDROID_ROOT/kernel/xiaomi/raphael/security/selinux/hooks.c"
+          if [ -f "$SELINUX_HOOKS" ]; then
+            echo "Checking hooks.c for selinux_state..."
+            grep -n "selinux_state" "$SELINUX_HOOKS" | head -10 || true
+            grep -n "RTIC" "$SELINUX_HOOKS" | head -10 || true
+            # Remove RTIC_MP_CACHE_SECTION from the variable declaration
+            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$SELINUX_HOOKS"
+            sed -i 's/__section("[^"]*rtic[^"]*")//g' "$SELINUX_HOOKS"
+          fi
+          
+          # Method 4: Patch the linker script to merge .bss.rtic into .bss
+          VMLINUX_LDS="$ANDROID_ROOT/kernel/xiaomi/raphael/arch/arm64/kernel/vmlinux.lds.S"
+          if [ -f "$VMLINUX_LDS" ]; then
+            echo "Checking vmlinux.lds.S for .bss.rtic..."
+            grep -n "rtic" "$VMLINUX_LDS" || true
           fi
           
           # Add KCFLAGS and clang vars to BoardConfig for kernel build
