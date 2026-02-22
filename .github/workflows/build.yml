@@ -222,41 +222,42 @@ jobs:
           # The problem: selinux_state is in .bss.rtic section which is placed far from .text
           # causing R_AARCH64_ADR_PREL_PG_HI21 overflow (±4GB limit exceeded)
           
-          # Fix: Directly patch the kernel source to remove RTIC section attribute
           KERNEL_DIR="$ANDROID_ROOT/kernel/xiaomi/raphael"
+          echo "=== RTIC FIX: Searching for .bss.rtic in kernel source ==="
           
-          # Patch include/linux/rtic_mp.h - make the macro expand to nothing
+          # Find ALL files containing .bss.rtic or RTIC
+          echo "Files containing .bss.rtic:"
+          find "$KERNEL_DIR" -type f \( -name "*.c" -o -name "*.h" -o -name "*.S" \) -exec grep -l "\.bss\.rtic\|RTIC_MP" {} \; 2>/dev/null || true
+          
+          # Show the exact selinux_state declaration
+          echo "=== selinux_state declarations ==="
+          grep -rn "selinux_state" "$KERNEL_DIR/security/selinux/" --include="*.c" --include="*.h" | head -20 || true
+          
+          # AGGRESSIVE FIX: Remove ALL .bss.rtic section attributes from ALL selinux files
+          echo "=== Removing .bss.rtic section attributes ==="
+          find "$KERNEL_DIR/security/selinux" -type f -name "*.c" -exec sed -i 's/__section("\.bss\.rtic")//g' {} \;
+          find "$KERNEL_DIR/security/selinux" -type f -name "*.c" -exec sed -i 's/__section(".bss.rtic")//g' {} \;
+          find "$KERNEL_DIR/security/selinux" -type f -name "*.h" -exec sed -i 's/__section("\.bss\.rtic")//g' {} \;
+          find "$KERNEL_DIR/security/selinux" -type f -name "*.h" -exec sed -i 's/__section(".bss.rtic")//g' {} \;
+          
+          # Also remove RTIC_MP_CACHE_SECTION macro usage
+          find "$KERNEL_DIR/security/selinux" -type f \( -name "*.c" -o -name "*.h" \) -exec sed -i 's/RTIC_MP_CACHE_SECTION//g' {} \;
+          
+          # Patch include/linux/rtic_mp.h if it exists
           if [ -f "$KERNEL_DIR/include/linux/rtic_mp.h" ]; then
-            echo "Overwriting rtic_mp.h to disable RTIC..."
+            echo "Overwriting rtic_mp.h..."
             printf '%s\n' \
-              '/* RTIC disabled to fix selinux_state relocation overflow */' \
+              '/* RTIC disabled */' \
               '#ifndef _LINUX_RTIC_MP_H' \
               '#define _LINUX_RTIC_MP_H' \
-              '' \
-              '/* Force RTIC_MP_CACHE_SECTION to be empty - no section attribute */' \
               '#define RTIC_MP_CACHE_SECTION' \
-              '' \
-              '#endif /* _LINUX_RTIC_MP_H */' \
+              '#endif' \
               > "$KERNEL_DIR/include/linux/rtic_mp.h"
-            echo "rtic_mp.h patched"
           fi
           
-          # Also patch security/selinux/include/security.h directly to remove any RTIC usage
-          SECURITY_H="$KERNEL_DIR/security/selinux/include/security.h"
-          if [ -f "$SECURITY_H" ]; then
-            echo "Patching security.h to remove RTIC_MP_CACHE_SECTION..."
-            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$SECURITY_H"
-            # Show what we patched
-            grep -n "selinux_state" "$SECURITY_H" || true
-          fi
-          
-          # Patch hooks.c as well
-          HOOKS_C="$KERNEL_DIR/security/selinux/hooks.c"
-          if [ -f "$HOOKS_C" ]; then
-            echo "Patching hooks.c to remove RTIC_MP_CACHE_SECTION..."
-            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$HOOKS_C"
-            grep -n "selinux_state" "$HOOKS_C" | head -5 || true
-          fi
+          # Show AFTER patching
+          echo "=== AFTER patching - selinux_state declarations ==="
+          grep -rn "selinux_state" "$KERNEL_DIR/security/selinux/" --include="*.c" --include="*.h" | head -20 || true
           
           # Add KCFLAGS and clang vars to BoardConfig for kernel build
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
