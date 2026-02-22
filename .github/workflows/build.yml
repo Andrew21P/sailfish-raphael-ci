@@ -229,22 +229,21 @@ jobs:
           echo "=== BEFORE - selinux_state declaration in hooks.c ==="
           grep -n "selinux_state" "$KERNEL_DIR/security/selinux/hooks.c" | head -5 || true
           
-          # CORRECT FIX: Remove __rticdata attribute from selinux_state
-          # The actual declaration is: struct selinux_state selinux_state __rticdata;
-          echo "=== Removing __rticdata attribute ==="
-          find "$KERNEL_DIR" -type f -name "*.c" -exec sed -i 's/__rticdata//g' {} \;
-          find "$KERNEL_DIR" -type f -name "*.h" -exec sed -i 's/__rticdata//g' {} \;
+          # CORRECT FIX: Redefine __rticdata to nothing (don't remove it - that breaks #define)
+          # Find and replace the #define __rticdata line in header files
+          echo "=== Redefining __rticdata to empty ==="
           
-          # Also remove any __section(".bss.rtic") patterns just in case
-          find "$KERNEL_DIR" -type f -name "*.c" -exec sed -i 's/__section("\.bss\.rtic")//g' {} \;
-          find "$KERNEL_DIR" -type f -name "*.h" -exec sed -i 's/__section("\.bss\.rtic")//g' {} \;
+          # Replace the __rticdata definition in init.h (where it's defined)
+          sed -i 's/#define __rticdata.*__attribute__.*section.*bss\.rtic.*/#define __rticdata \/\* disabled \*\//' "$KERNEL_DIR/include/linux/init.h"
           
-          # Patch rtic_mp.h to make __rticdata a no-op (belt and suspenders)
-          RTIC_HEADER="$KERNEL_DIR/include/linux/rtic_mp.h"
-          if [ -f "$RTIC_HEADER" ]; then
-            echo "Patching rtic_mp.h to make __rticdata a no-op..."
-            sed -i 's/#define __rticdata.*/#define __rticdata/' "$RTIC_HEADER"
+          # Also check rtic_mp.h
+          if [ -f "$KERNEL_DIR/include/linux/rtic_mp.h" ]; then
+            sed -i 's/#define __rticdata.*/#define __rticdata \/\* disabled \*\//' "$KERNEL_DIR/include/linux/rtic_mp.h"
           fi
+          
+          # Show the patched definition
+          echo "=== AFTER - __rticdata definition ==="
+          grep -n "__rticdata" "$KERNEL_DIR/include/linux/init.h" || true
           
           # Show AFTER patching
           echo "=== AFTER - selinux_state declaration in hooks.c ==="
