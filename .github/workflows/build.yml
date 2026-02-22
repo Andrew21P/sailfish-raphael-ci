@@ -218,75 +218,52 @@ jobs:
             echo "Disabled FORTIFY_SOURCE, HARDENED_USERCOPY, COMPAT_VDSO, MODVERSIONS, and QCOM_RTIC in defconfig"
           fi
           
-          # Patch RTIC to fix selinux_state relocation overflow
-          # The .bss.rtic section is placed too far from code, causing R_AARCH64_ADR_PREL_PG_HI21 overflow
+          # DEFINITIVE FIX for selinux_state RTIC relocation overflow
+          # The problem: selinux_state is in .bss.rtic section which is placed far from .text
+          # causing R_AARCH64_ADR_PREL_PG_HI21 overflow (±4GB limit exceeded)
           
-          # Method 1: Patch the RTIC header to make section macro empty
-          RTIC_MP="$ANDROID_ROOT/kernel/xiaomi/raphael/include/linux/rtic_mp.h"
-          if [ -f "$RTIC_MP" ]; then
-            echo "Found rtic_mp.h, patching..."
-            cat "$RTIC_MP" | head -50
-            # Replace RTIC_MP_CACHE_SECTION definition with empty
-            sed -i 's/RTIC_MP_CACHE_SECTION[[:space:]]*__section.*$/RTIC_MP_CACHE_SECTION/g' "$RTIC_MP"
-            # Also try removing any __section in RTIC_MP macros
-            sed -i 's/__section(".bss.rtic")//g' "$RTIC_MP"
-            sed -i "s/__section('.bss.rtic')//g" "$RTIC_MP"
-            echo "After patch:"
-            cat "$RTIC_MP" | head -50
+          # Fix: Directly patch the kernel source to remove RTIC section attribute
+          KERNEL_DIR="$ANDROID_ROOT/kernel/xiaomi/raphael"
+          
+          # Patch include/linux/rtic_mp.h - make the macro expand to nothing
+          if [ -f "$KERNEL_DIR/include/linux/rtic_mp.h" ]; then
+            echo "Overwriting rtic_mp.h to disable RTIC..."
+            cat > "$KERNEL_DIR/include/linux/rtic_mp.h" << 'RTIC_EOF'
+/* RTIC disabled to fix selinux_state relocation overflow */
+#ifndef _LINUX_RTIC_MP_H
+#define _LINUX_RTIC_MP_H
+
+/* Force RTIC_MP_CACHE_SECTION to be empty - no section attribute */
+#define RTIC_MP_CACHE_SECTION
+
+#endif /* _LINUX_RTIC_MP_H */
+RTIC_EOF
+            echo "rtic_mp.h patched"
           fi
           
-          # Method 2: Directly patch selinux/ss/services.c where selinux_state is declared
-          SELINUX_SS="$ANDROID_ROOT/kernel/xiaomi/raphael/security/selinux/ss/services.c"
-          if [ -f "$SELINUX_SS" ]; then
-            echo "Checking services.c for selinux_state..."
-            grep -n "selinux_state" "$SELINUX_SS" | head -10 || true
-            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$SELINUX_SS"
+          # Also patch security/selinux/include/security.h directly to remove any RTIC usage
+          SECURITY_H="$KERNEL_DIR/security/selinux/include/security.h"
+          if [ -f "$SECURITY_H" ]; then
+            echo "Patching security.h to remove RTIC_MP_CACHE_SECTION..."
+            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$SECURITY_H"
+            # Show what we patched
+            grep -n "selinux_state" "$SECURITY_H" || true
           fi
           
-          # Method 3: Patch hooks.c directly
-          SELINUX_HOOKS="$ANDROID_ROOT/kernel/xiaomi/raphael/security/selinux/hooks.c"
-          if [ -f "$SELINUX_HOOKS" ]; then
-            echo "Checking hooks.c for selinux_state..."
-            grep -n "selinux_state" "$SELINUX_HOOKS" | head -10 || true
-            grep -n "RTIC" "$SELINUX_HOOKS" | head -10 || true
-            # Remove RTIC_MP_CACHE_SECTION from the variable declaration
-            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$SELINUX_HOOKS"
-            sed -i 's/__section("[^"]*rtic[^"]*")//g' "$SELINUX_HOOKS"
+          # Patch hooks.c as well
+          HOOKS_C="$KERNEL_DIR/security/selinux/hooks.c"
+          if [ -f "$HOOKS_C" ]; then
+            echo "Patching hooks.c to remove RTIC_MP_CACHE_SECTION..."
+            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$HOOKS_C"
+            grep -n "selinux_state" "$HOOKS_C" | head -5 || true
           fi
-          
-          # Method 4: Patch the linker script to include .bss.rtic within .bss section
-          VMLINUX_LDS="$ANDROID_ROOT/kernel/xiaomi/raphael/arch/arm64/kernel/vmlinux.lds.S"
-          if [ -f "$VMLINUX_LDS" ]; then
-            echo "=== BEFORE: vmlinux.lds.S content ==="
-            cat "$VMLINUX_LDS"
-            echo "=== END vmlinux.lds.S ==="
-            
-            # Comment out any .bss.rtic special section so it merges with .bss
-            sed -i 's/\.bss\.rtic/DISABLED_bss_rtic/g' "$VMLINUX_LDS"
-            
-            echo "After linker script patch (disabled .bss.rtic references)"
-          fi
-          
-          # Method 5: Find and show the selinux include that adds RTIC
-          SELINUX_INCLUDE="$ANDROID_ROOT/kernel/xiaomi/raphael/security/selinux/include/security.h"
-          if [ -f "$SELINUX_INCLUDE" ]; then
-            echo "=== security.h content (selinux_state definition) ==="
-            cat "$SELINUX_INCLUDE"
-            echo "=== END security.h ==="
-            # Remove any RTIC-related macros from the extern declaration
-            sed -i 's/RTIC_MP_CACHE_SECTION//g' "$SELINUX_INCLUDE"
-          fi
-          
-          # Method 6: Override RTIC via CFLAGS - redefine the macro to nothing
-          # This ensures any RTIC_MP_CACHE_SECTION usage becomes empty
-          echo "Adding RTIC disable flags to kernel build..."
           
           # Add KCFLAGS and clang vars to BoardConfig for kernel build
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KCFLAGS" device/xiaomi/raphael/BoardConfig.mk; then
               echo "" >> device/xiaomi/raphael/BoardConfig.mk
               echo "# Use clang for kernel build (avoids GCC 11 relocation errors)" >> device/xiaomi/raphael/BoardConfig.mk
-              echo 'KERNEL_MAKE_FLAGS += KCFLAGS="-Wno-error -Wno-unused-but-set-variable -Wno-unused-variable -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -DRTIC_MP_CACHE_SECTION="' >> device/xiaomi/raphael/BoardConfig.mk
+              echo 'KERNEL_MAKE_FLAGS += KCFLAGS="-Wno-error -Wno-unused-but-set-variable -Wno-unused-variable -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0"' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE=aarch64-linux-gnu-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CROSS_COMPILE_ARM32=arm-linux-gnueabi-' >> device/xiaomi/raphael/BoardConfig.mk
               echo 'KERNEL_MAKE_FLAGS += CC=clang' >> device/xiaomi/raphael/BoardConfig.mk
