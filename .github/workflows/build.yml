@@ -218,6 +218,23 @@ jobs:
             echo "Disabled FORTIFY_SOURCE, HARDENED_USERCOPY, COMPAT_VDSO, MODVERSIONS, and QCOM_RTIC in defconfig"
           fi
           
+          # Patch selinux_state to remove RTIC section attribute (fixes relocation overflow)
+          SELINUX_HOOKS="$ANDROID_ROOT/kernel/xiaomi/raphael/security/selinux/hooks.c"
+          if [ -f "$SELINUX_HOOKS" ]; then
+            # Remove __section(".bss.rtic") or __section(.bss.rtic) attribute from selinux_state
+            sed -i 's/__section("[^"]*rtic[^"]*")//g' "$SELINUX_HOOKS"
+            sed -i 's/__section([^)]*rtic[^)]*)//g' "$SELINUX_HOOKS"
+            echo "Patched selinux hooks.c to remove RTIC section attributes"
+          fi
+          
+          # Also check include/linux/rtic_mp.h for the macro definition
+          RTIC_MP="$ANDROID_ROOT/kernel/xiaomi/raphael/include/linux/rtic_mp.h"
+          if [ -f "$RTIC_MP" ]; then
+            # Make RTIC_MP_CACHE_SECTION empty
+            sed -i 's/#define RTIC_MP_CACHE_SECTION.*/#define RTIC_MP_CACHE_SECTION/g' "$RTIC_MP"
+            echo "Patched rtic_mp.h to disable RTIC section"
+          fi
+          
           # Add KCFLAGS and clang vars to BoardConfig for kernel build
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KCFLAGS" device/xiaomi/raphael/BoardConfig.mk; then
