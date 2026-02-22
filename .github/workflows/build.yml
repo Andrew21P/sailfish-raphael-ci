@@ -228,16 +228,16 @@ jobs:
           # Patch include/linux/rtic_mp.h - make the macro expand to nothing
           if [ -f "$KERNEL_DIR/include/linux/rtic_mp.h" ]; then
             echo "Overwriting rtic_mp.h to disable RTIC..."
-            cat > "$KERNEL_DIR/include/linux/rtic_mp.h" << 'RTIC_EOF'
-/* RTIC disabled to fix selinux_state relocation overflow */
-#ifndef _LINUX_RTIC_MP_H
-#define _LINUX_RTIC_MP_H
-
-/* Force RTIC_MP_CACHE_SECTION to be empty - no section attribute */
-#define RTIC_MP_CACHE_SECTION
-
-#endif /* _LINUX_RTIC_MP_H */
-RTIC_EOF
+            printf '%s\n' \
+              '/* RTIC disabled to fix selinux_state relocation overflow */' \
+              '#ifndef _LINUX_RTIC_MP_H' \
+              '#define _LINUX_RTIC_MP_H' \
+              '' \
+              '/* Force RTIC_MP_CACHE_SECTION to be empty - no section attribute */' \
+              '#define RTIC_MP_CACHE_SECTION' \
+              '' \
+              '#endif /* _LINUX_RTIC_MP_H */' \
+              > "$KERNEL_DIR/include/linux/rtic_mp.h"
             echo "rtic_mp.h patched"
           fi
           
