@@ -201,17 +201,19 @@ jobs:
             echo "Added per-file CFLAGS to IPA Makefile"
           fi
 
-          # Disable FORTIFY_SOURCE and HARDENED_USERCOPY in defconfig
+          # Disable FORTIFY_SOURCE, HARDENED_USERCOPY, COMPAT_VDSO and MODVERSIONS in defconfig
           DEFCONFIG="$ANDROID_ROOT/kernel/xiaomi/raphael/arch/arm64/configs/raphael_user_defconfig"
           if [ -f "$DEFCONFIG" ]; then
             # Remove any existing related configs
             sed -i '/CONFIG_FORTIFY_SOURCE/d' "$DEFCONFIG"
             sed -i '/CONFIG_HARDENED_USERCOPY/d' "$DEFCONFIG"
             sed -i '/CONFIG_COMPAT_VDSO/d' "$DEFCONFIG"
+            sed -i '/CONFIG_MODVERSIONS/d' "$DEFCONFIG"
             echo "# CONFIG_FORTIFY_SOURCE is not set" >> "$DEFCONFIG"
             echo "# CONFIG_HARDENED_USERCOPY is not set" >> "$DEFCONFIG"
             echo "# CONFIG_COMPAT_VDSO is not set" >> "$DEFCONFIG"
-            echo "Disabled FORTIFY_SOURCE, HARDENED_USERCOPY, and COMPAT_VDSO in defconfig"
+            echo "# CONFIG_MODVERSIONS is not set" >> "$DEFCONFIG"
+            echo "Disabled FORTIFY_SOURCE, HARDENED_USERCOPY, COMPAT_VDSO, and MODVERSIONS in defconfig"
           fi
           
           # Add KCFLAGS and clang vars to BoardConfig for kernel build
