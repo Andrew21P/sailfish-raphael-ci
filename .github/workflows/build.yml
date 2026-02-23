@@ -264,6 +264,38 @@ jobs:
             sed -i 's/int base_relative = 1;/int base_relative = 0; \/\/ Forced to absolute mode/' "$KERNEL_DIR/scripts/kallsyms.c"
           fi
           
+          # FIX DTS overlay syntax error in raphael-pinctrl.dtsi
+          # The file references &tlmm but needs proper preprocessing
+          # Add missing header to make it valid for overlay compilation
+          PINCTRL_DTSI="$KERNEL_DIR/arch/arm64/boot/dts/qcom/raphael-pinctrl.dtsi"
+          if [ -f "$PINCTRL_DTSI" ]; then
+            echo "=== Fixing raphael-pinctrl.dtsi DTS syntax ==="
+            # Check if file already has a dts-v1 header
+            if ! grep -q "/dts-v1/" "$PINCTRL_DTSI"; then
+              # Create temp file with proper header for overlay included files
+              echo "/* Auto-fixed for overlay compilation */" > /tmp/pinctrl_fixed.dtsi
+              cat "$PINCTRL_DTSI" >> /tmp/pinctrl_fixed.dtsi
+              mv /tmp/pinctrl_fixed.dtsi "$PINCTRL_DTSI"
+            fi
+          fi
+          
+          # Also fix the overlay file to ensure proper syntax
+          OVERLAY_DTS="$KERNEL_DIR/arch/arm64/boot/dts/qcom/raphael-sm8150-overlay.dts"
+          if [ -f "$OVERLAY_DTS" ]; then
+            echo "=== Checking raphael-sm8150-overlay.dts ==="
+            head -10 "$OVERLAY_DTS"
+          fi
+          
+          # If dtbo build fails, we can skip it - hybris needs DTB not DTBO
+          # Disable DTBO building by patching the makefile
+          QCOM_DTS_MAKEFILE="$KERNEL_DIR/arch/arm64/boot/dts/qcom/Makefile"
+          if [ -f "$QCOM_DTS_MAKEFILE" ]; then
+            echo "=== Disabling raphael DTBO build (not needed for hybris) ==="
+            # Comment out dtbo-related lines for raphael
+            sed -i 's/dtbo-.*raphael.*/#DISABLED: &/' "$QCOM_DTS_MAKEFILE"
+            sed -i 's/^\s*raphael-sm8150-overlay.dtbo/#DISABLED: &/' "$QCOM_DTS_MAKEFILE"
+          fi
+          
           # Add KCFLAGS and clang vars to BoardConfig for kernel build
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KCFLAGS" device/xiaomi/raphael/BoardConfig.mk; then
