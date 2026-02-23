@@ -702,6 +702,11 @@ jobs:
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/hybris-boot.img
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/droidmedia*.tgz
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/*.img
+            ${{ env.ANDROID_ROOT }}/system/core/include/
+            ${{ env.ANDROID_ROOT }}/system/core/libcutils/include/
+            ${{ env.ANDROID_ROOT }}/system/libbase/include/
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/obj/include/
+            ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/system/core/fs_mgr/libfs_avb/android_arm64_armv8-a_static/gen/
           retention-days: 14
 
   build-dhd:
@@ -715,12 +720,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: hal-output
-          path: ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/
+          path: ${{ env.ANDROID_ROOT }}/
 
       - name: Build DHD in Docker container
         run: |
           cd $ANDROID_ROOT
           rm -rf .repo || true
+          
+          # Create generated_android_filesystem_config.h stub if missing
+          if [ ! -f "$ANDROID_ROOT/generated_android_filesystem_config.h" ]; then
+            echo '#pragma once' > "$ANDROID_ROOT/generated_android_filesystem_config.h"
+            echo '#include <private/android_filesystem_config.h>' >> "$ANDROID_ROOT/generated_android_filesystem_config.h"
+          fi
 
           #------------------------------------------
           # Copy local RPM packaging repos (from checked-out workspace)
