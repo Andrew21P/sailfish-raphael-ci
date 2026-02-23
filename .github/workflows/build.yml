@@ -653,19 +653,26 @@ jobs:
           # First run make to build kernel and check if Image.gz-dtb was created
           make -j$(nproc --all) bootimage || true
           
-          # Fallback: if Image.gz-dtb doesn't exist, create it from Image.gz + DTB
-          KERNEL_OUT="$ANDROID_ROOT/out/target/product/$DEVICE/obj/KERNEL_OBJ/arch/arm64/boot"
-          if [ ! -f "$KERNEL_OUT/Image.gz-dtb" ] && [ -f "$KERNEL_OUT/Image.gz" ]; then
-            echo "=== Creating Image.gz-dtb fallback ==="
-            # Find any sm8150 DTB file
-            DTB_FILE=$(find "$KERNEL_OUT/dts" -name "sm8150*.dtb" -type f 2>/dev/null | head -1)
-            if [ -n "$DTB_FILE" ] && [ -f "$DTB_FILE" ]; then
-              echo "Concatenating Image.gz + $DTB_FILE"
-              cat "$KERNEL_OUT/Image.gz" "$DTB_FILE" > "$KERNEL_OUT/Image.gz-dtb"
-            else
-              echo "No DTB found, using Image.gz as Image.gz-dtb"
-              cp "$KERNEL_OUT/Image.gz" "$KERNEL_OUT/Image.gz-dtb"
-            fi
+          # Find and copy kernel to expected location (handles out-of-tree builds)
+          KERNEL_OUT="$ANDROID_ROOT/out/target/product/$DEVICE/obj/KERNEL_OBJ"
+          KERNEL_BOOT="$KERNEL_OUT/arch/arm64/boot"
+          
+          # Search for the actual kernel image location
+          echo "=== Finding kernel images ==="
+          find "$ANDROID_ROOT" -name "Image.gz" -type f 2>/dev/null | head -5
+          
+          # Create the expected directory if needed
+          mkdir -p "$KERNEL_BOOT"
+          
+          # Find and copy Image.gz to expected location
+          FOUND_IMAGE=$(find "$ANDROID_ROOT/out" -name "Image.gz" -type f 2>/dev/null | head -1)
+          if [ -n "$FOUND_IMAGE" ]; then
+            echo "Found kernel at: $FOUND_IMAGE"
+            cp "$FOUND_IMAGE" "$KERNEL_BOOT/Image.gz"
+            # Also create Image.gz-dtb as copy (hybris can use either)
+            cp "$FOUND_IMAGE" "$KERNEL_BOOT/Image.gz-dtb"
+            # Copy to product dir kernel location
+            cp "$FOUND_IMAGE" "$ANDROID_ROOT/out/target/product/$DEVICE/kernel"
           fi
           
           # Now build hybris-hal
