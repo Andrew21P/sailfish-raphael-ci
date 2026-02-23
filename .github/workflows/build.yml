@@ -752,10 +752,16 @@ jobs:
           rm -rf .repo || true
           
           # Create generated_android_filesystem_config.h with proper android_ids definitions
-          # Using printf to avoid heredoc indentation issues
+          # Must be self-contained since Android 11 doesn't define android_id_info struct in headers
           printf '%s\n' \
             '#pragma once' \
             '#include <private/android_filesystem_config.h>' \
+            '' \
+            '/* Define the struct since Android 11 headers do not export it */' \
+            'struct android_id_info {' \
+            '    const char* name;' \
+            '    unsigned aid;' \
+            '};' \
             '' \
             'static const struct android_id_info android_ids[] = {' \
             '    { "root",          AID_ROOT },' \
