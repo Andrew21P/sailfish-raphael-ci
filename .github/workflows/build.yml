@@ -287,13 +287,21 @@ jobs:
           fi
           
           # If dtbo build fails, we can skip it - hybris needs DTB not DTBO
-          # Disable DTBO building by patching the makefile
+          # Disable only DTBO overlays, keep base DTBs building
           QCOM_DTS_MAKEFILE="$KERNEL_DIR/arch/arm64/boot/dts/qcom/Makefile"
           if [ -f "$QCOM_DTS_MAKEFILE" ]; then
-            echo "=== Disabling raphael DTBO build (not needed for hybris) ==="
-            # Comment out dtbo-related lines for raphael
-            sed -i 's/dtbo-.*raphael.*/#DISABLED: &/' "$QCOM_DTS_MAKEFILE"
-            sed -i 's/^\s*raphael-sm8150-overlay.dtbo/#DISABLED: &/' "$QCOM_DTS_MAKEFILE"
+            echo "=== Disabling raphael DTBO build only (keeping base DTBs) ==="
+            # Only disable overlay dtbo files, be very specific
+            sed -i '/raphael.*overlay.*dtbo/d' "$QCOM_DTS_MAKEFILE"
+            sed -i '/dtbo.*raphael.*overlay/d' "$QCOM_DTS_MAKEFILE"
+          fi
+          
+          # Ensure we use Image.gz format (without appended DTB - hybris uses separate dtb)
+          # Patch BoardConfig to use BOARD_KERNEL_IMAGE_NAME := Image.gz
+          if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
+            echo "" >> device/xiaomi/raphael/BoardConfig.mk
+            echo "# Use Image.gz without appended DTB for hybris" >> device/xiaomi/raphael/BoardConfig.mk
+            echo "BOARD_KERNEL_IMAGE_NAME := Image.gz" >> device/xiaomi/raphael/BoardConfig.mk
           fi
           
           # Add KCFLAGS and clang vars to BoardConfig for kernel build
@@ -642,6 +650,25 @@ jobs:
           # Free space
           rm -rf .repo || true
 
+          # First run make to build kernel and check if Image.gz-dtb was created
+          make -j$(nproc --all) bootimage || true
+          
+          # Fallback: if Image.gz-dtb doesn't exist, create it from Image.gz + DTB
+          KERNEL_OUT="$ANDROID_ROOT/out/target/product/$DEVICE/obj/KERNEL_OBJ/arch/arm64/boot"
+          if [ ! -f "$KERNEL_OUT/Image.gz-dtb" ] && [ -f "$KERNEL_OUT/Image.gz" ]; then
+            echo "=== Creating Image.gz-dtb fallback ==="
+            # Find any sm8150 DTB file
+            DTB_FILE=$(find "$KERNEL_OUT/dts" -name "sm8150*.dtb" -type f 2>/dev/null | head -1)
+            if [ -n "$DTB_FILE" ] && [ -f "$DTB_FILE" ]; then
+              echo "Concatenating Image.gz + $DTB_FILE"
+              cat "$KERNEL_OUT/Image.gz" "$DTB_FILE" > "$KERNEL_OUT/Image.gz-dtb"
+            else
+              echo "No DTB found, using Image.gz as Image.gz-dtb"
+              cp "$KERNEL_OUT/Image.gz" "$KERNEL_OUT/Image.gz-dtb"
+            fi
+          fi
+          
+          # Now build hybris-hal
           make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot
 
       - name: Upload HAL Artifacts
