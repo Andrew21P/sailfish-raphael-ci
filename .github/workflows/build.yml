@@ -251,6 +251,19 @@ jobs:
           echo "=== AFTER - selinux_state declaration in hooks.c ==="
           grep -n "selinux_state" "$KERNEL_DIR/security/selinux/hooks.c" | head -5 || true
           
+          # FIX kallsyms relative mode overflow - patch Kconfig to disable BASE_RELATIVE
+          # The defconfig change might not be enough, so patch the Kconfig default
+          echo "=== Patching KALLSYMS_BASE_RELATIVE to default n ==="
+          sed -i 's/config KALLSYMS_BASE_RELATIVE/config KALLSYMS_BASE_RELATIVE\n\tdefault n\n\t# Patched by sailfish-raphael-ci - original default follows/' "$KERNEL_DIR/init/Kconfig" || true
+          
+          # Also patch scripts/kallsyms.c to not use relative mode (belt and suspenders)
+          if [ -f "$KERNEL_DIR/scripts/kallsyms.c" ]; then
+            echo "=== Patching kallsyms.c to force absolute mode ==="
+            # Set base_relative to 0 always
+            sed -i 's/static int base_relative;/static int base_relative = 0; \/\/ Forced to absolute mode/' "$KERNEL_DIR/scripts/kallsyms.c"
+            sed -i 's/int base_relative = 1;/int base_relative = 0; \/\/ Forced to absolute mode/' "$KERNEL_DIR/scripts/kallsyms.c"
+          fi
+          
           # Add KCFLAGS and clang vars to BoardConfig for kernel build
           if [ -f device/xiaomi/raphael/BoardConfig.mk ]; then
             if ! grep -q "KCFLAGS" device/xiaomi/raphael/BoardConfig.mk; then
