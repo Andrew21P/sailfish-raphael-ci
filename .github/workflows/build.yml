@@ -733,7 +733,7 @@ jobs:
 
           # Copy droid-hal-raphael (contains HAL packaging)
           mkdir -p $ANDROID_ROOT/rpm
-          cp -r $WORKSPACE/droid-hal-raphael/* $ANDROID_ROOT/rpm/
+          cp -r $WORKSPACE/droid-hal-raphael/rpm/* $ANDROID_ROOT/rpm/
           cd $ANDROID_ROOT/rpm
           git init && git add -A && git commit -m "init" || true
           # Clone the dhd submodule
