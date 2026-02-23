@@ -650,29 +650,48 @@ jobs:
           # Free space
           rm -rf .repo || true
 
+          # Create missing apns-full-conf.xml (LineageOS dependency)
+          mkdir -p device/sample/etc
+          cat > device/sample/etc/apns-full-conf.xml << 'APNSEOF'
+<?xml version="1.0" encoding="utf-8"?>
+<apns version="8">
+</apns>
+APNSEOF
+
           # First run make to build kernel and check if Image.gz-dtb was created
           make -j$(nproc --all) bootimage || true
           
           # Find and copy kernel to expected location (handles out-of-tree builds)
+          # Kernel may output to kernel/xiaomi/raphael/out/ instead of out/
           KERNEL_OUT="$ANDROID_ROOT/out/target/product/$DEVICE/obj/KERNEL_OBJ"
           KERNEL_BOOT="$KERNEL_OUT/arch/arm64/boot"
           
-          # Search for the actual kernel image location
+          # Search for the actual kernel image location (search entire tree)
           echo "=== Finding kernel images ==="
           find "$ANDROID_ROOT" -name "Image.gz" -type f 2>/dev/null | head -5
           
           # Create the expected directory if needed
           mkdir -p "$KERNEL_BOOT"
           
-          # Find and copy Image.gz to expected location
-          FOUND_IMAGE=$(find "$ANDROID_ROOT/out" -name "Image.gz" -type f 2>/dev/null | head -1)
+          # Find Image.gz anywhere in the tree (kernel outputs to nested out/ inside kernel source)
+          FOUND_IMAGE=$(find "$ANDROID_ROOT" -path "*/arch/arm64/boot/Image.gz" -type f 2>/dev/null | head -1)
           if [ -n "$FOUND_IMAGE" ]; then
             echo "Found kernel at: $FOUND_IMAGE"
             cp "$FOUND_IMAGE" "$KERNEL_BOOT/Image.gz"
             # Also create Image.gz-dtb as copy (hybris can use either)
             cp "$FOUND_IMAGE" "$KERNEL_BOOT/Image.gz-dtb"
             # Copy to product dir kernel location
+            mkdir -p "$ANDROID_ROOT/out/target/product/$DEVICE"
             cp "$FOUND_IMAGE" "$ANDROID_ROOT/out/target/product/$DEVICE/kernel"
+            # Also copy .config for later checks
+            FOUND_CONFIG=$(dirname "$(dirname "$(dirname "$FOUND_IMAGE")")")/.config
+            if [ -f "$FOUND_CONFIG" ]; then
+              cp "$FOUND_CONFIG" "$KERNEL_OUT/.config"
+            fi
+            echo "Kernel copied to expected locations"
+          else
+            echo "ERROR: Could not find Image.gz anywhere"
+            find "$ANDROID_ROOT" -name "Image*" -type f 2>/dev/null | head -10
           fi
           
           # Now build hybris-hal
