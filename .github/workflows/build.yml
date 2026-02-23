@@ -652,11 +652,8 @@ jobs:
 
           # Create missing apns-full-conf.xml (LineageOS dependency)
           mkdir -p device/sample/etc
-          cat > device/sample/etc/apns-full-conf.xml << 'APNSEOF'
-<?xml version="1.0" encoding="utf-8"?>
-<apns version="8">
-</apns>
-APNSEOF
+          echo '<?xml version="1.0" encoding="utf-8"?>' > device/sample/etc/apns-full-conf.xml
+          echo '<apns version="8"></apns>' >> device/sample/etc/apns-full-conf.xml
 
           # First run make to build kernel and check if Image.gz-dtb was created
           make -j$(nproc --all) bootimage || true
