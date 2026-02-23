@@ -16,6 +16,16 @@ on:
         description: 'trigger to build'
         required: true
         default: 'run'
+      skip_hal:
+        description: 'Skip HAL build (use existing artifact)'
+        required: false
+        type: boolean
+        default: false
+      hal_run_id:
+        description: 'Run ID to download HAL artifact from (if skip_hal=true)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -33,6 +43,7 @@ jobs:
   #=================================================
   prep-source:
     runs-on: ubuntu-22.04
+    if: ${{ inputs.skip_hal != true }}
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
@@ -90,6 +101,7 @@ jobs:
   build-hal:
     needs: prep-source
     runs-on: ubuntu-22.04
+    if: ${{ inputs.skip_hal != true }}
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
@@ -711,16 +723,28 @@ jobs:
 
   build-dhd:
     needs: build-hal
+    if: ${{ always() && (needs.build-hal.result == 'success' || needs.build-hal.result == 'skipped') }}
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download HAL Artifacts
+      - name: Download HAL Artifacts (from current run)
+        if: ${{ inputs.skip_hal != true }}
         uses: actions/download-artifact@v4
         with:
           name: hal-output
           path: ${{ env.ANDROID_ROOT }}/
+
+      - name: Download HAL Artifacts (from specified run)
+        if: ${{ inputs.skip_hal == true && inputs.hal_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: hal-output
+          path: ${{ env.ANDROID_ROOT }}/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.hal_run_id }}
 
       - name: Build DHD in Docker container
         run: |
