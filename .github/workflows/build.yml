@@ -728,109 +728,77 @@ jobs:
           rm -rf .repo || true
           
           # Create generated_android_filesystem_config.h with proper android_ids definitions
-          cat > "$ANDROID_ROOT/generated_android_filesystem_config.h" << 'GENHEADER'
-          #pragma once
-          #include <private/android_filesystem_config.h>
-          
-          static const struct android_id_info android_ids[] = {
-              { "root",          AID_ROOT },
-              { "system",        AID_SYSTEM },
-              { "radio",         AID_RADIO },
-              { "bluetooth",     AID_BLUETOOTH },
-              { "graphics",      AID_GRAPHICS },
-              { "input",         AID_INPUT },
-              { "audio",         AID_AUDIO },
-              { "camera",        AID_CAMERA },
-              { "log",           AID_LOG },
-              { "compass",       AID_COMPASS },
-              { "mount",         AID_MOUNT },
-              { "wifi",          AID_WIFI },
-              { "adb",           AID_ADB },
-              { "install",       AID_INSTALL },
-              { "media",         AID_MEDIA },
-              { "dhcp",          AID_DHCP },
-              { "sdcard_rw",     AID_SDCARD_RW },
-              { "vpn",           AID_VPN },
-              { "keystore",      AID_KEYSTORE },
-              { "usb",           AID_USB },
-              { "drm",           AID_DRM },
-              { "mdnsr",         AID_MDNSR },
-              { "gps",           AID_GPS },
-              { "media_rw",      AID_MEDIA_RW },
-              { "mtp",           AID_MTP },
-              { "drmrpc",        AID_DRMRPC },
-              { "nfc",           AID_NFC },
-              { "sdcard_r",      AID_SDCARD_R },
-              { "clat",          AID_CLAT },
-              { "loop_radio",    AID_LOOP_RADIO },
-              { "mediadrm",      AID_MEDIADRM },
-              { "package_info",  AID_PACKAGE_INFO },
-              { "sdcard_pics",   AID_SDCARD_PICS },
-              { "sdcard_av",     AID_SDCARD_AV },
-              { "sdcard_all",    AID_SDCARD_ALL },
-              { "logd",          AID_LOGD },
-              { "shared_relro",  AID_SHARED_RELRO },
-              { "dbus",          AID_DBUS },
-              { "tlsdate",       AID_TLSDATE },
-              { "mediaex",       AID_MEDIA_EX },
-              { "audioserver",   AID_AUDIOSERVER },
-              { "cameraserver", AID_CAMERASERVER },
-              { "firewall",      AID_FIREWALL },
-              { "trunks",        AID_TRUNKS },
-              { "nvram",         AID_NVRAM },
-              { "dns",           AID_DNS },
-              { "dns_tether",    AID_DNS_TETHER },
-              { "webview_zygote", AID_WEBVIEW_ZYGOTE },
-              { "vehicle_network", AID_VEHICLE_NETWORK },
-              { "media_audio",   AID_MEDIA_AUDIO },
-              { "media_video",   AID_MEDIA_VIDEO },
-              { "media_image",   AID_MEDIA_IMAGE },
-              { "tombstoned",    AID_TOMBSTONED },
-              { "media_obb",     AID_MEDIA_OBB },
-              { "ese",           AID_ESE },
-              { "ota_update",    AID_OTA_UPDATE },
-              { "automotive_evs", AID_AUTOMOTIVE_EVS },
-              { "lowpan",        AID_LOWPAN },
-              { "hsm",           AID_HSM },
-              { "reserved_disk", AID_RESERVED_DISK },
-              { "statsd",        AID_STATSD },
-              { "incidentd",     AID_INCIDENTD },
-              { "secure_element", AID_SECURE_ELEMENT },
-              { "lmkd",          AID_LMKD },
-              { "llkd",          AID_LLKD },
-              { "iorapd",        AID_IORAPD },
-              { "gpu_service",   AID_GPU_SERVICE },
-              { "network_stack", AID_NETWORK_STACK },
-              { "gsid",          AID_GSID },
-              { "fsverity_cert", AID_FSVERITY_CERT },
-              { "credstore",     AID_CREDSTORE },
-              { "external_storage", AID_EXTERNAL_STORAGE },
-              { "ext_data_rw",   AID_EXT_DATA_RW },
-              { "ext_obb_rw",    AID_EXT_OBB_RW },
-              { "context_hub",   AID_CONTEXT_HUB },
-              { "virtualizationservice", AID_VIRTUALIZATIONSERVICE },
-              { "shell",         AID_SHELL },
-              { "cache",         AID_CACHE },
-              { "diag",          AID_DIAG },
-              { "oem_reserved_start", AID_OEM_RESERVED_START },
-              { "oem_reserved_end", AID_OEM_RESERVED_END },
-              { "net_bt_admin",  AID_NET_BT_ADMIN },
-              { "net_bt",        AID_NET_BT },
-              { "inet",          AID_INET },
-              { "net_raw",       AID_NET_RAW },
-              { "net_admin",     AID_NET_ADMIN },
-              { "net_bw_stats",  AID_NET_BW_STATS },
-              { "net_bw_acct",   AID_NET_BW_ACCT },
-              { "readproc",      AID_READPROC },
-              { "wakelock",      AID_WAKELOCK },
-              { "uhid",          AID_UHID },
-              { "everybody",     AID_EVERYBODY },
-              { "misc",          AID_MISC },
-              { "nobody",        AID_NOBODY },
-          };
-          
-          static const unsigned int android_id_count = sizeof(android_ids) / sizeof(android_ids[0]);
-          GENHEADER
+          # Using printf to avoid heredoc indentation issues
+          printf '%s\n' \
+            '#pragma once' \
+            '#include <private/android_filesystem_config.h>' \
+            '' \
+            'static const struct android_id_info android_ids[] = {' \
+            '    { "root",          AID_ROOT },' \
+            '    { "system",        AID_SYSTEM },' \
+            '    { "radio",         AID_RADIO },' \
+            '    { "bluetooth",     AID_BLUETOOTH },' \
+            '    { "graphics",      AID_GRAPHICS },' \
+            '    { "input",         AID_INPUT },' \
+            '    { "audio",         AID_AUDIO },' \
+            '    { "camera",        AID_CAMERA },' \
+            '    { "log",           AID_LOG },' \
+            '    { "compass",       AID_COMPASS },' \
+            '    { "mount",         AID_MOUNT },' \
+            '    { "wifi",          AID_WIFI },' \
+            '    { "adb",           AID_ADB },' \
+            '    { "install",       AID_INSTALL },' \
+            '    { "media",         AID_MEDIA },' \
+            '    { "dhcp",          AID_DHCP },' \
+            '    { "sdcard_rw",     AID_SDCARD_RW },' \
+            '    { "vpn",           AID_VPN },' \
+            '    { "keystore",      AID_KEYSTORE },' \
+            '    { "usb",           AID_USB },' \
+            '    { "drm",           AID_DRM },' \
+            '    { "mdnsr",         AID_MDNSR },' \
+            '    { "gps",           AID_GPS },' \
+            '    { "media_rw",      AID_MEDIA_RW },' \
+            '    { "mtp",           AID_MTP },' \
+            '    { "nfc",           AID_NFC },' \
+            '    { "sdcard_r",      AID_SDCARD_R },' \
+            '    { "clat",          AID_CLAT },' \
+            '    { "loop_radio",    AID_LOOP_RADIO },' \
+            '    { "mediadrm",      AID_MEDIADRM },' \
+            '    { "package_info",  AID_PACKAGE_INFO },' \
+            '    { "sdcard_pics",   AID_SDCARD_PICS },' \
+            '    { "sdcard_av",     AID_SDCARD_AV },' \
+            '    { "sdcard_all",    AID_SDCARD_ALL },' \
+            '    { "logd",          AID_LOGD },' \
+            '    { "shared_relro",  AID_SHARED_RELRO },' \
+            '    { "audioserver",   AID_AUDIOSERVER },' \
+            '    { "cameraserver",  AID_CAMERASERVER },' \
+            '    { "firewall",      AID_FIREWALL },' \
+            '    { "dns",           AID_DNS },' \
+            '    { "statsd",        AID_STATSD },' \
+            '    { "incidentd",     AID_INCIDENTD },' \
+            '    { "lmkd",          AID_LMKD },' \
+            '    { "gpu_service",   AID_GPU_SERVICE },' \
+            '    { "network_stack", AID_NETWORK_STACK },' \
+            '    { "shell",         AID_SHELL },' \
+            '    { "cache",         AID_CACHE },' \
+            '    { "diag",          AID_DIAG },' \
+            '    { "net_bt_admin",  AID_NET_BT_ADMIN },' \
+            '    { "net_bt",        AID_NET_BT },' \
+            '    { "inet",          AID_INET },' \
+            '    { "net_raw",       AID_NET_RAW },' \
+            '    { "net_admin",     AID_NET_ADMIN },' \
+            '    { "net_bw_stats",  AID_NET_BW_STATS },' \
+            '    { "net_bw_acct",   AID_NET_BW_ACCT },' \
+            '    { "readproc",      AID_READPROC },' \
+            '    { "wakelock",      AID_WAKELOCK },' \
+            '    { "uhid",          AID_UHID },' \
+            '    { "everybody",     AID_EVERYBODY },' \
+            '    { "misc",          AID_MISC },' \
+            '    { "nobody",        AID_NOBODY },' \
+            '};' \
+            '' \
+            'static const unsigned int android_id_count = sizeof(android_ids) / sizeof(android_ids[0]);' \
+            > "$ANDROID_ROOT/generated_android_filesystem_config.h"
 
           #------------------------------------------
           # Copy local RPM packaging repos (from checked-out workspace)
