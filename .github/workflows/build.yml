@@ -962,6 +962,12 @@ jobs:
           # Copy headers from libbase
           cp -r "$ANDROID_ROOT/system/libbase/include/android-base/"* "$ANDROID_ROOT/system/core/base/include/android-base/" 2>/dev/null || true
 
+          # Create Android version file so DHD detects Android 11 properly
+          # This is needed for DHD to include stringprintf.cpp in IMG2SIMG_SOURCES
+          mkdir -p "$ANDROID_ROOT/build/core"
+          echo "PLATFORM_VERSION := 11" > "$ANDROID_ROOT/build/core/version_defaults.mk"
+          echo "PLATFORM_SDK_VERSION := 30" >> "$ANDROID_ROOT/build/core/version_defaults.mk"
+
           # Copy droid-hal-raphael (contains HAL packaging)
           mkdir -p $ANDROID_ROOT/rpm
           cp -r $WORKSPACE/droid-hal-raphael/rpm/* $ANDROID_ROOT/rpm/
@@ -969,6 +975,12 @@ jobs:
           git init && git add -A && git commit -m "init" || true
           # Clone the dhd submodule
           git clone https://github.com/mer-hybris/droid-hal-device.git $ANDROID_ROOT/rpm/dhd --depth=1
+          
+          # CRITICAL: Patch DHD to force Android 11 detection
+          # DHD checks android_version_major to decide whether to include stringprintf.cpp
+          # Insert "android_version_major=11" near the start of the %build section
+          sed -i 's/^%build$/\n%build\n# Force Android 11 mode for hybris-18.1\nandroid_version_major=11\n/' \
+            $ANDROID_ROOT/rpm/dhd/droid-hal-device.inc
           
           # Patch usergroupgen.c to REPLACE the android_filesystem_config.h include with our self-contained header
           # Our header has no external dependencies - all AID values are hardcoded
