@@ -716,6 +716,7 @@ jobs:
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/*.img
             ${{ env.ANDROID_ROOT }}/system/core/include/
             ${{ env.ANDROID_ROOT }}/system/core/libcutils/include/
+            ${{ env.ANDROID_ROOT }}/system/core/libsparse/
             ${{ env.ANDROID_ROOT }}/system/libbase/include/
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/obj/include/
             ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/system/core/fs_mgr/libfs_avb/android_arm64_armv8-a_static/gen/
@@ -876,6 +877,17 @@ jobs:
           # hybris-installer from ginkgo (for mkbootfs, etc.)
           git clone https://github.com/sailfish-on-ginkgo/hybris-installer.git \
             $ANDROID_ROOT/hybris/hybris-installer || true
+
+          # Clone libsparse if missing (needed for img2simg/simg2img build)
+          if [ ! -d "$ANDROID_ROOT/system/core/libsparse" ]; then
+            echo "libsparse not in artifact, cloning from AOSP..."
+            mkdir -p "$ANDROID_ROOT/system/core"
+            git clone --depth=1 --branch android-11.0.0_r1 \
+              https://android.googlesource.com/platform/system/core \
+              /tmp/system_core_sparse
+            cp -r /tmp/system_core_sparse/libsparse "$ANDROID_ROOT/system/core/"
+            rm -rf /tmp/system_core_sparse
+          fi
 
           # Copy droid-hal-raphael (contains HAL packaging)
           mkdir -p $ANDROID_ROOT/rpm
