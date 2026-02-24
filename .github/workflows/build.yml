@@ -850,6 +850,11 @@ jobs:
           git init && git add -A && git commit -m "init" || true
           # Clone the dhd submodule
           git clone https://github.com/mer-hybris/droid-hal-device.git $ANDROID_ROOT/rpm/dhd --depth=1
+          
+          # Patch usergroupgen.c to include our generated_android_filesystem_config.h
+          # The original only includes <private/android_filesystem_config.h> which has AID_* but NOT android_ids[]
+          sed -i '/^#include.*android_filesystem_config\.h/a #include "generated_android_filesystem_config.h"' \
+            $ANDROID_ROOT/rpm/dhd/helpers/usergroupgen.c
 
           # Copy droid-config-raphael (contains sparse overlays, patterns)
           mkdir -p $ANDROID_ROOT/hybris/droid-configs
