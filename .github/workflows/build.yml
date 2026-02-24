@@ -895,7 +895,8 @@ jobs:
           if [ ! -d "$ANDROID_ROOT/system/libbase" ]; then
             echo "libbase not in artifact, cloning from AOSP..."
             mkdir -p "$ANDROID_ROOT/system"
-            git clone --depth=1 --branch android-11.0.0_r1 \
+            # libbase uses 'main' branch, not android-11.0.0_r1 tag
+            git clone --depth=1 \
               https://android.googlesource.com/platform/system/libbase \
               "$ANDROID_ROOT/system/libbase"
           fi
