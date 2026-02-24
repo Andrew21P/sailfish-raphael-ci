@@ -882,6 +882,10 @@ jobs:
           # system/core/, system/libbase/, build/make/, build/core/ come from HAL artifact now
           # No need to clone - they're included in hal-output artifact
           
+          # Fix permissions on scripts from artifact (artifacts lose execute bit)
+          chmod +x "$ANDROID_ROOT/build/make/tools/fs_config/fs_config_generator.py" 2>/dev/null || true
+          find "$ANDROID_ROOT/build" -name "*.py" -exec chmod +x {} \; 2>/dev/null || true
+          
           # Create system/core/base symlink to system/libbase for DHD compatibility
           # (Android 11 moved base to libbase, DHD expects old path)
           if [ -d "$ANDROID_ROOT/system/libbase" ] && [ ! -d "$ANDROID_ROOT/system/core/base" ]; then
