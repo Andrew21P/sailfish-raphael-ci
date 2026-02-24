@@ -889,6 +889,9 @@ jobs:
           # Our header has no external dependencies - all AID values are hardcoded
           sed -i 's|#include.*android_filesystem_config\.h.*|#include "generated_android_filesystem_config.h"|' \
             $ANDROID_ROOT/rpm/dhd/helpers/usergroupgen.c
+          
+          # Copy the header to the helpers directory so the #include "..." finds it
+          cp "$ANDROID_ROOT/generated_android_filesystem_config.h" "$ANDROID_ROOT/rpm/dhd/helpers/"
 
           # Copy droid-config-raphael (contains sparse overlays, patterns)
           mkdir -p $ANDROID_ROOT/hybris/droid-configs
