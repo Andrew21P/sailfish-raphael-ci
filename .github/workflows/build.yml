@@ -751,84 +751,124 @@ jobs:
           cd $ANDROID_ROOT
           rm -rf .repo || true
           
-          # Create generated_android_filesystem_config.h with proper android_ids definitions
-          # Must be self-contained since Android 11 doesn't define android_id_info struct in headers
-          printf '%s\n' \
-            '#pragma once' \
-            '#include <private/android_filesystem_config.h>' \
-            '' \
-            '/* Define the struct since Android 11 headers do not export it */' \
-            'struct android_id_info {' \
-            '    const char* name;' \
-            '    unsigned aid;' \
-            '};' \
-            '' \
-            'static const struct android_id_info android_ids[] = {' \
-            '    { "root",          AID_ROOT },' \
-            '    { "system",        AID_SYSTEM },' \
-            '    { "radio",         AID_RADIO },' \
-            '    { "bluetooth",     AID_BLUETOOTH },' \
-            '    { "graphics",      AID_GRAPHICS },' \
-            '    { "input",         AID_INPUT },' \
-            '    { "audio",         AID_AUDIO },' \
-            '    { "camera",        AID_CAMERA },' \
-            '    { "log",           AID_LOG },' \
-            '    { "compass",       AID_COMPASS },' \
-            '    { "mount",         AID_MOUNT },' \
-            '    { "wifi",          AID_WIFI },' \
-            '    { "adb",           AID_ADB },' \
-            '    { "install",       AID_INSTALL },' \
-            '    { "media",         AID_MEDIA },' \
-            '    { "dhcp",          AID_DHCP },' \
-            '    { "sdcard_rw",     AID_SDCARD_RW },' \
-            '    { "vpn",           AID_VPN },' \
-            '    { "keystore",      AID_KEYSTORE },' \
-            '    { "usb",           AID_USB },' \
-            '    { "drm",           AID_DRM },' \
-            '    { "mdnsr",         AID_MDNSR },' \
-            '    { "gps",           AID_GPS },' \
-            '    { "media_rw",      AID_MEDIA_RW },' \
-            '    { "mtp",           AID_MTP },' \
-            '    { "nfc",           AID_NFC },' \
-            '    { "sdcard_r",      AID_SDCARD_R },' \
-            '    { "clat",          AID_CLAT },' \
-            '    { "loop_radio",    AID_LOOP_RADIO },' \
-            '    { "mediadrm",      AID_MEDIADRM },' \
-            '    { "package_info",  AID_PACKAGE_INFO },' \
-            '    { "sdcard_pics",   AID_SDCARD_PICS },' \
-            '    { "sdcard_av",     AID_SDCARD_AV },' \
-            '    { "sdcard_all",    AID_SDCARD_ALL },' \
-            '    { "logd",          AID_LOGD },' \
-            '    { "shared_relro",  AID_SHARED_RELRO },' \
-            '    { "audioserver",   AID_AUDIOSERVER },' \
-            '    { "cameraserver",  AID_CAMERASERVER },' \
-            '    { "firewall",      AID_FIREWALL },' \
-            '    { "dns",           AID_DNS },' \
-            '    { "statsd",        AID_STATSD },' \
-            '    { "incidentd",     AID_INCIDENTD },' \
-            '    { "lmkd",          AID_LMKD },' \
-            '    { "gpu_service",   AID_GPU_SERVICE },' \
-            '    { "network_stack", AID_NETWORK_STACK },' \
-            '    { "shell",         AID_SHELL },' \
-            '    { "cache",         AID_CACHE },' \
-            '    { "diag",          AID_DIAG },' \
-            '    { "net_bt_admin",  AID_NET_BT_ADMIN },' \
-            '    { "net_bt",        AID_NET_BT },' \
-            '    { "inet",          AID_INET },' \
-            '    { "net_raw",       AID_NET_RAW },' \
-            '    { "net_admin",     AID_NET_ADMIN },' \
-            '    { "net_bw_stats",  AID_NET_BW_STATS },' \
-            '    { "net_bw_acct",   AID_NET_BW_ACCT },' \
-            '    { "readproc",      AID_READPROC },' \
-            '    { "wakelock",      AID_WAKELOCK },' \
-            '    { "uhid",          AID_UHID },' \
-            '    { "everybody",     AID_EVERYBODY },' \
-            '    { "misc",          AID_MISC },' \
-            '    { "nobody",        AID_NOBODY },' \
-            '};' \
-            '' \
-            'static const unsigned int android_id_count = sizeof(android_ids) / sizeof(android_ids[0]);' \
-            > "$ANDROID_ROOT/generated_android_filesystem_config.h"
+          # Create generated_android_filesystem_config.h - FULLY SELF-CONTAINED
+          # No dependencies on Android headers - all AID values hardcoded from Android 11 sources
+          cat > "$ANDROID_ROOT/generated_android_filesystem_config.h" << 'GENERATED_HEADER_EOF'
+#pragma once
+/* 
+ * Fully self-contained android_ids definition for hybris builds.
+ * AID values from Android 11 (R) system/core/libcutils/include/private/android_filesystem_config.h
+ * This file has NO external dependencies.
+ */
+
+struct android_id_info {
+    const char* name;
+    unsigned aid;
+};
+
+static const struct android_id_info android_ids[] = {
+    { "root",          0 },
+    { "system",        1000 },
+    { "radio",         1001 },
+    { "bluetooth",     1002 },
+    { "graphics",      1003 },
+    { "input",         1004 },
+    { "audio",         1005 },
+    { "camera",        1006 },
+    { "log",           1007 },
+    { "compass",       1008 },
+    { "mount",         1009 },
+    { "wifi",          1010 },
+    { "adb",           1011 },
+    { "install",       1012 },
+    { "media",         1013 },
+    { "dhcp",          1014 },
+    { "sdcard_rw",     1015 },
+    { "vpn",           1016 },
+    { "keystore",      1017 },
+    { "usb",           1018 },
+    { "drm",           1019 },
+    { "mdnsr",         1020 },
+    { "gps",           1021 },
+    { "media_rw",      1023 },
+    { "mtp",           1024 },
+    { "nfc",           1027 },
+    { "sdcard_r",      1028 },
+    { "clat",          1029 },
+    { "loop_radio",    1030 },
+    { "mediadrm",      1031 },
+    { "package_info",  1032 },
+    { "sdcard_pics",   1033 },
+    { "sdcard_av",     1034 },
+    { "sdcard_all",    1035 },
+    { "logd",          1036 },
+    { "shared_relro",  1037 },
+    { "dbus",          1038 },
+    { "tlsdate",       1039 },
+    { "mediaex",       1040 },
+    { "audioserver",   1041 },
+    { "metrics_coll",  1042 },
+    { "metricsd",      1043 },
+    { "webserv",       1044 },
+    { "debuggerd",     1045 },
+    { "mediacodec",    1046 },
+    { "cameraserver",  1047 },
+    { "firewall",      1048 },
+    { "trunks",        1049 },
+    { "nvram",         1050 },
+    { "dns",           1051 },
+    { "dns_tether",    1052 },
+    { "webview_zygote",1053 },
+    { "vehicle_network",1054 },
+    { "media_audio",   1055 },
+    { "media_video",   1056 },
+    { "media_image",   1057 },
+    { "tombstoned",    1058 },
+    { "media_obb",     1059 },
+    { "ese",           1060 },
+    { "ota_update",    1061 },
+    { "automotive_evs",1062 },
+    { "lowpan",        1063 },
+    { "hsm",           1064 },
+    { "reserved_disk", 1065 },
+    { "statsd",        1066 },
+    { "incidentd",     1067 },
+    { "secure_element",1068 },
+    { "lmkd",          1069 },
+    { "llkd",          1070 },
+    { "iorapd",        1071 },
+    { "gpu_service",   1072 },
+    { "network_stack", 1073 },
+    { "gsid",          1074 },
+    { "fsverity_cert", 1075 },
+    { "credstore",     1076 },
+    { "external_storage",1077 },
+    { "ext_data_rw",   1078 },
+    { "ext_obb_rw",    1079 },
+    { "context_hub",   1080 },
+    { "virtualizationservice",1081 },
+    { "shell",         2000 },
+    { "cache",         2001 },
+    { "diag",          2002 },
+    { "oem_reserved_start", 2900 },
+    { "oem_reserved_end",   2999 },
+    { "net_bt_admin",  3001 },
+    { "net_bt",        3002 },
+    { "inet",          3003 },
+    { "net_raw",       3004 },
+    { "net_admin",     3005 },
+    { "net_bw_stats",  3006 },
+    { "net_bw_acct",   3007 },
+    { "readproc",      3009 },
+    { "wakelock",      3010 },
+    { "uhid",          3011 },
+    { "everybody",     9997 },
+    { "misc",          9998 },
+    { "nobody",        9999 },
+};
+
+static const unsigned int android_id_count = sizeof(android_ids) / sizeof(android_ids[0]);
+GENERATED_HEADER_EOF
 
           #------------------------------------------
           # Copy local RPM packaging repos (from checked-out workspace)
@@ -851,9 +891,9 @@ jobs:
           # Clone the dhd submodule
           git clone https://github.com/mer-hybris/droid-hal-device.git $ANDROID_ROOT/rpm/dhd --depth=1
           
-          # Patch usergroupgen.c to include our generated_android_filesystem_config.h
-          # The original only includes <private/android_filesystem_config.h> which has AID_* but NOT android_ids[]
-          sed -i '/^#include.*android_filesystem_config\.h/a #include "generated_android_filesystem_config.h"' \
+          # Patch usergroupgen.c to REPLACE the android_filesystem_config.h include with our self-contained header
+          # Our header has no external dependencies - all AID values are hardcoded
+          sed -i 's|#include.*android_filesystem_config\.h.*|#include "generated_android_filesystem_config.h"|' \
             $ANDROID_ROOT/rpm/dhd/helpers/usergroupgen.c
 
           # Copy droid-config-raphael (contains sparse overlays, patterns)
