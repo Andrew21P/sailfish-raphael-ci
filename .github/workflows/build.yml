@@ -913,6 +913,12 @@ jobs:
           echo '#!/bin/sh' > "$ANDROID_ROOT/out/target/product/$DEVICE/system/bin/updater"
           chmod +x "$ANDROID_ROOT/out/target/product/$DEVICE/system/bin/updater"
 
+          # Create dummy hybris-updater-script (hybris-hal doesn't build it, hybris-installer provides real one)
+          cat > "$ANDROID_ROOT/out/target/product/$DEVICE/hybris-updater-script" << 'UPDATER_EOF'
+          ui_print("Sailfish OS for raphael");
+          ui_print("Installing...");
+          UPDATER_EOF
+
           # Copy droid-hal-raphael (contains HAL packaging)
           mkdir -p $ANDROID_ROOT/rpm
           cp -r $WORKSPACE/droid-hal-raphael/rpm/* $ANDROID_ROOT/rpm/
