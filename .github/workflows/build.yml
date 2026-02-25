@@ -715,6 +715,9 @@ jobs:
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/droidmedia*.tgz
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/*.img
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/obj/include/
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/root/
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/vendor/
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/system/
             ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/system/core/fs_mgr/libfs_avb/android_arm64_armv8-a_static/gen/
             ${{ env.ANDROID_ROOT }}/system/core/
             ${{ env.ANDROID_ROOT }}/system/libbase/
