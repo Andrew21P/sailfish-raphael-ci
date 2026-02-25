@@ -706,6 +706,11 @@ jobs:
           # Now build hybris-hal
           make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot
 
+      - name: Fix permissions for artifact upload
+        run: |
+          # Fix permissions on output directories that may have restricted access
+          sudo chmod -R a+rX ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/ || true
+
       - name: Upload HAL Artifacts
         uses: actions/upload-artifact@v4
         with:
