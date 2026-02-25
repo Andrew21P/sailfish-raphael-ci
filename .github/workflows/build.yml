@@ -729,6 +729,7 @@ jobs:
             ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/system/core/fs_mgr/libfs_avb/android_arm64_armv8-a_static/gen/
             ${{ env.ANDROID_ROOT }}/system/core/
             ${{ env.ANDROID_ROOT }}/system/libbase/
+            ${{ env.ANDROID_ROOT }}/system/tools/
             ${{ env.ANDROID_ROOT }}/build/make/
             ${{ env.ANDROID_ROOT }}/build/core/
             ${{ env.ANDROID_ROOT }}/build/soong/
