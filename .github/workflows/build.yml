@@ -703,32 +703,48 @@ jobs:
             find "$ANDROID_ROOT" -name "Image*" -type f 2>/dev/null | head -10
           fi
           
-          # Now build hybris-hal
+          # Build hybris-hal with full system for Android 11+ (APEX support)
+          # hybris-hal alone doesn't produce bionic libs in APEX format
+          echo "=== Building hybris-hal, droidmedia, and system targets ==="
           make -j$(nproc --all) hybris-hal droidmedia || make -j$(nproc --all) hybris-boot
+          
+          # Build additional targets needed for Android 11+ APEX bionic libs
+          echo "=== Building additional system components for APEX ==="
+          make -j$(nproc --all) systemimage 2>/dev/null || true
+          
+          # Debug: Show what was actually produced
+          OUT_DIR="${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}"
+          echo "=== OUT directory contents ==="
+          ls -la "$OUT_DIR/" || true
+          echo "=== Checking for APEX/bionic ==="
+          find "$OUT_DIR" -name "libc.so" 2>/dev/null | head -10 || true
+          find "$OUT_DIR" -path "*/apex/*" -name "*.so" 2>/dev/null | head -20 || true
+          echo "=== OUT directory size ==="
+          du -sh "$OUT_DIR"/* 2>/dev/null | sort -h | tail -20 || true
 
       - name: Fix permissions for artifact upload
         run: |
           OUT_DIR="${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}"
           # Remove device node directories that can't be archived
           sudo rm -rf "$OUT_DIR/root/d" "$OUT_DIR/root/dev" "$OUT_DIR/vendor/d" "$OUT_DIR/vendor/dev" || true
+          # Remove other problematic device nodes and sockets
+          find "$OUT_DIR" -type b -delete 2>/dev/null || true
+          find "$OUT_DIR" -type c -delete 2>/dev/null || true
+          find "$OUT_DIR" -type s -delete 2>/dev/null || true
+          find "$OUT_DIR" -type p -delete 2>/dev/null || true
           # Force readable permissions on everything else
           sudo chmod -R 755 "$OUT_DIR" || true
+          # Show final size
+          echo "=== Final artifact directories ==="
+          du -sh "$OUT_DIR" "${{ env.ANDROID_ROOT }}/out/soong" 2>/dev/null || true
 
       - name: Upload HAL Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: hal-output
           path: |
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/hybris-boot.img
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/droidmedia*.tgz
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/*.img
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/obj/include/
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/root/
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/vendor/
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/system/
-            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/apex/
-            ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/system/core/fs_mgr/libfs_avb/android_arm64_armv8-a_static/gen/
-            ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/art/build/
+            ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/
+            ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/
             ${{ env.ANDROID_ROOT }}/system/core/
             ${{ env.ANDROID_ROOT }}/system/libbase/
             ${{ env.ANDROID_ROOT }}/system/tools/
