@@ -3,9 +3,9 @@
 set -x
 
 source /home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci/hadk.env
-export ANDROID_ROOT=/home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci/hadk_18.1
+# ANDROID_ROOT is now set correctly by hadk.env to /home/mersdk/work/halium
 
-sudo chown -R $(whoami):$(whoami) /home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci
+sudo chown -R $(whoami):$(whoami) /home/mersdk/work/halium
 cd $ANDROID_ROOT
 
 cd ~/.scratchbox2
@@ -37,17 +37,18 @@ chmod +x rpm/dhd/helpers/*.sh || true
 git config --global user.email "ci@github.com"
 git config --global user.name "Github Actions"
 git config --global --add safe.directory /home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci
+git config --global --add safe.directory /home/mersdk/work/halium
 
 cd $ANDROID_ROOT
 sudo mkdir -p /proc/sys/fs/binfmt_misc/
 sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc
 
 # Copy kickstart file to the expected location 
-KS_SRC=/home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci/Jolla-@RELEASE@-$DEVICE-@ARCH@.ks
+REPO_ROOT=/home/mersdk/work/sailfish-raphael-ci/sailfish-raphael-ci
+KS_SRC=$REPO_ROOT/Jolla-@RELEASE@-$DEVICE-@ARCH@.ks
 if [ -f "$KS_SRC" ]; then
     echo "Copying kickstart file from $KS_SRC"
-    mkdir -p $ANDROID_ROOT/../
-    cp "$KS_SRC" "$ANDROID_ROOT/../Jolla-@RELEASE@-$DEVICE-@ARCH@.ks"
+    cp "$KS_SRC" "$ANDROID_ROOT/Jolla-@RELEASE@-$DEVICE-@ARCH@.ks"
 fi
 
 # Build all packages including the image 
