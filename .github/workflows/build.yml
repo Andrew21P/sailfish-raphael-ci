@@ -908,16 +908,45 @@ jobs:
             ln -sf "$ANDROID_ROOT/system/libbase" "$ANDROID_ROOT/system/core/base"
           fi
 
-          # Create dummy updater binary (hybris-hal doesn't build it, hybris-installer provides real one)
-          mkdir -p "$ANDROID_ROOT/out/target/product/$DEVICE/system/bin"
-          echo '#!/bin/sh' > "$ANDROID_ROOT/out/target/product/$DEVICE/system/bin/updater"
-          chmod +x "$ANDROID_ROOT/out/target/product/$DEVICE/system/bin/updater"
-
-          # Create dummy hybris-updater-script (hybris-hal doesn't build it, hybris-installer provides real one)
-          cat > "$ANDROID_ROOT/out/target/product/$DEVICE/hybris-updater-script" << 'UPDATER_EOF'
+          # Create ALL dummy updater files (hybris-hal doesn't build these, hybris-installer provides real ones)
+          DEVICE_OUT="$ANDROID_ROOT/out/target/product/$DEVICE"
+          mkdir -p "$DEVICE_OUT/system/bin"
+          mkdir -p "$DEVICE_OUT/system/etc/init/hw"
+          mkdir -p "$DEVICE_OUT/obj/ROOT/hybris-boot_intermediates"
+          
+          # Dummy updater binary
+          echo '#!/bin/sh' > "$DEVICE_OUT/system/bin/updater"
+          chmod +x "$DEVICE_OUT/system/bin/updater"
+          
+          # Dummy hybris-updater-script
+          cat > "$DEVICE_OUT/hybris-updater-script" << 'EOF'
           ui_print("Sailfish OS for raphael");
           ui_print("Installing...");
-          UPDATER_EOF
+          EOF
+          
+          # Dummy hybris-updater-unpack.sh
+          cat > "$DEVICE_OUT/hybris-updater-unpack.sh" << 'EOF'
+          #!/bin/sh
+          # Placeholder - real script provided by hybris-installer
+          EOF
+          chmod +x "$DEVICE_OUT/hybris-updater-unpack.sh"
+          
+          # Dummy init binary (needed by some DHD versions)
+          echo '#!/bin/sh' > "$DEVICE_OUT/system/bin/init"
+          chmod +x "$DEVICE_OUT/system/bin/init"
+          
+          # Dummy init.rc files (needed by DHD)  
+          touch "$DEVICE_OUT/system/etc/init/servicemanager.rc"
+          touch "$DEVICE_OUT/system/etc/init/hw/init.rc"
+          touch "$DEVICE_OUT/system/etc/init/hw/init.zygote64.rc"
+          touch "$DEVICE_OUT/system/etc/init/apexd.rc"
+          touch "$DEVICE_OUT/system/etc/init/hybris_extras.rc"
+          
+          # Dummy boot-initramfs.gz (empty placeholder)
+          gzip -n < /dev/null > "$DEVICE_OUT/obj/ROOT/hybris-boot_intermediates/boot-initramfs.gz"
+          
+          # Dummy kernel (DHD checks for this)
+          touch "$DEVICE_OUT/kernel"
 
           # Copy droid-hal-raphael (contains HAL packaging)
           mkdir -p $ANDROID_ROOT/rpm
