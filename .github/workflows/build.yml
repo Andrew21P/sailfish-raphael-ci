@@ -721,6 +721,7 @@ jobs:
             ${{ env.ANDROID_ROOT }}/build/make/
             ${{ env.ANDROID_ROOT }}/build/core/
             ${{ env.ANDROID_ROOT }}/build/soong/
+            ${{ env.ANDROID_ROOT }}/hybris/hybris-boot/
           retention-days: 14
 
   build-dhd:
