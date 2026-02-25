@@ -908,6 +908,11 @@ jobs:
             ln -sf "$ANDROID_ROOT/system/libbase" "$ANDROID_ROOT/system/core/base"
           fi
 
+          # Create dummy updater binary (hybris-hal doesn't build it, hybris-installer provides real one)
+          mkdir -p "$ANDROID_ROOT/out/target/product/$DEVICE/system/bin"
+          echo '#!/bin/sh' > "$ANDROID_ROOT/out/target/product/$DEVICE/system/bin/updater"
+          chmod +x "$ANDROID_ROOT/out/target/product/$DEVICE/system/bin/updater"
+
           # Copy droid-hal-raphael (contains HAL packaging)
           mkdir -p $ANDROID_ROOT/rpm
           cp -r $WORKSPACE/droid-hal-raphael/rpm/* $ANDROID_ROOT/rpm/
