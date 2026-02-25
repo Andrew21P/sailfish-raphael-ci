@@ -708,8 +708,11 @@ jobs:
 
       - name: Fix permissions for artifact upload
         run: |
-          # Fix permissions on output directories that may have restricted access
-          sudo chmod -R a+rX ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/ || true
+          OUT_DIR="${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}"
+          # Remove device node directories that can't be archived
+          sudo rm -rf "$OUT_DIR/root/d" "$OUT_DIR/root/dev" "$OUT_DIR/vendor/d" "$OUT_DIR/vendor/dev" || true
+          # Force readable permissions on everything else
+          sudo chmod -R 755 "$OUT_DIR" || true
 
       - name: Upload HAL Artifacts
         uses: actions/upload-artifact@v4
