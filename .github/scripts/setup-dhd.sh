@@ -312,6 +312,29 @@ gzip -n < /dev/null > "$DEVICE_OUT/obj/ROOT/hybris-boot_intermediates/boot-initr
 # Dummy kernel
 touch "$DEVICE_OUT/kernel"
 
+# Create kernel build output stubs (needed by DHD spec)
+KERNEL_OBJ="$DEVICE_OUT/obj/KERNEL_OBJ"
+mkdir -p "$KERNEL_OBJ/include/config"
+
+# Create kernel .config with required options
+cat > "$KERNEL_OBJ/.config" << 'EOF'
+# Minimal kernel config for DHD build
+CONFIG_ANDROID_PARANOID_NETWORK=y
+CONFIG_ANDROID_BINDER_IPC=y
+CONFIG_ASHMEM=y
+CONFIG_STAGING=y
+CONFIG_ANDROID=y
+CONFIG_ION=y
+EOF
+
+# Create kernel.release
+echo "4.14.180-perf-g9999999" > "$KERNEL_OBJ/include/config/kernel.release"
+
+# Also create in alternative paths DHD might look for
+mkdir -p "$DEVICE_OUT/obj/PACKAGING/kernel_headers_intermediates/include/linux"
+cp "$KERNEL_OBJ/.config" "$DEVICE_OUT/obj/PACKAGING/kernel_headers_intermediates/.config"
+echo "4.14.180-perf-g9999999" > "$DEVICE_OUT/obj/PACKAGING/kernel_headers_intermediates/include/config/kernel.release" 2>/dev/null || true
+
 # Copy droid-hal-raphael
 mkdir -p $ANDROID_ROOT/rpm
 cp -r $WORKSPACE/droid-hal-raphael/rpm/* $ANDROID_ROOT/rpm/
