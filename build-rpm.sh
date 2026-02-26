@@ -28,8 +28,10 @@ sed -i 's/echo Verifying kernel config/echo "SKIPPING kernel config check"/' rpm
 
 # Fix glob patterns that don't work properly (they're quoted in the spec)
 # Just comment out the problematic sections and hardcode values
-# Patch 1: Skip the CONFIG_ANDROID_PARANOID_NETWORK check entirely  
-sed -i "/CONFIG_ANDROID_PARANOID_NETWORK/d" rpm/dhd/droid-hal-device.inc || true
+# Patch 1: Make CONFIG_ANDROID_PARANOID_NETWORK check always pass
+# The original is a multi-line if: if [...] && grep -q CONFIG_ANDROID_PARANOID_NETWORK ...; then
+# Deleting the grep line orphans the fi, so replace the grep with 'true' instead
+sed -i 's/grep -q.*CONFIG_ANDROID_PARANOID_NETWORK.*/true; then/' rpm/dhd/droid-hal-device.inc || true
 
 # Patch 2: Hardcode kernel_release instead of using glob
 sed -i "s/kernel_release=.*/kernel_release='4.14.180-perf'/" rpm/dhd/droid-hal-device.inc || true
