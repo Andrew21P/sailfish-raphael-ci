@@ -66,7 +66,8 @@ jobs:
           name: hal-output
           path: |
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/
-            ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/
+            ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/bionic/
+            ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/art/build/
             ${{ env.ANDROID_ROOT }}/system/core/
             ${{ env.ANDROID_ROOT }}/system/libbase/
             ${{ env.ANDROID_ROOT }}/system/tools/
