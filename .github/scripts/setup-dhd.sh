@@ -11,6 +11,133 @@ echo "WORKSPACE: $WORKSPACE"
 cd $ANDROID_ROOT
 rm -rf .repo || true
 
+#------------------------------------------
+# Fetch missing Android source headers if needed
+# DHD's extract-headers.sh needs these from the source tree
+#------------------------------------------
+HYBRIS_BRANCH="hybris-18.1"
+GITHUB_RAW="https://raw.githubusercontent.com/nicko88/halium_mirror/android-11.0.0_r48"
+
+fetch_android_headers() {
+  local src_dir="$1"
+  local dst_dir="$ANDROID_ROOT/$src_dir"
+  
+  if [ ! -d "$dst_dir" ]; then
+    echo "Fetching missing headers: $src_dir"
+    mkdir -p "$(dirname "$dst_dir")"
+    
+    # Try cloning from mer-hybris android repo (has hybris-18.1 branch)
+    git clone --depth=1 --filter=blob:none --sparse \
+      "https://github.com/LineageOS/halium_mirror.git" \
+      "$dst_dir" -b android-11.0.0_r48 2>/dev/null || true
+    
+    if [ -d "$dst_dir/.git" ]; then
+      cd "$dst_dir"
+      git sparse-checkout set . 2>/dev/null || true
+      cd "$ANDROID_ROOT"
+    fi
+  fi
+}
+
+# Check for critical headers
+if [ ! -d "$ANDROID_ROOT/hardware/libhardware/include/hardware" ]; then
+  echo "=== Fetching missing Android source headers ==="
+  
+  # Clone essential header repos from LineageOS mirrors (most reliable)
+  # hardware/libhardware
+  if [ ! -d "$ANDROID_ROOT/hardware/libhardware" ]; then
+    echo "Cloning hardware/libhardware..."
+    mkdir -p "$ANDROID_ROOT/hardware"
+    git clone --depth=1 https://github.com/LineageOS/android_hardware_libhardware.git \
+      "$ANDROID_ROOT/hardware/libhardware" -b lineage-18.1 2>/dev/null || \
+    git clone --depth=1 https://android.googlesource.com/platform/hardware/libhardware \
+      "$ANDROID_ROOT/hardware/libhardware" -b android-11.0.0_r48 2>/dev/null || true
+  fi
+  
+  # system/core (if not fully present)
+  if [ ! -d "$ANDROID_ROOT/system/core/include" ]; then
+    echo "Cloning system/core..."
+    mkdir -p "$ANDROID_ROOT/system"
+    rm -rf "$ANDROID_ROOT/system/core" 2>/dev/null || true
+    git clone --depth=1 https://github.com/LineageOS/android_system_core.git \
+      "$ANDROID_ROOT/system/core" -b lineage-18.1 2>/dev/null || \
+    git clone --depth=1 https://android.googlesource.com/platform/system/core \
+      "$ANDROID_ROOT/system/core" -b android-11.0.0_r48 2>/dev/null || true
+  fi
+  
+  # frameworks/native
+  if [ ! -d "$ANDROID_ROOT/frameworks/native/include" ]; then
+    echo "Cloning frameworks/native..."
+    mkdir -p "$ANDROID_ROOT/frameworks"
+    git clone --depth=1 https://github.com/LineageOS/android_frameworks_native.git \
+      "$ANDROID_ROOT/frameworks/native" -b lineage-18.1 2>/dev/null || \
+    git clone --depth=1 https://android.googlesource.com/platform/frameworks/native \
+      "$ANDROID_ROOT/frameworks/native" -b android-11.0.0_r48 2>/dev/null || true
+  fi
+  
+  # frameworks/av  
+  if [ ! -d "$ANDROID_ROOT/frameworks/av/include" ]; then
+    echo "Cloning frameworks/av..."
+    git clone --depth=1 https://github.com/LineageOS/android_frameworks_av.git \
+      "$ANDROID_ROOT/frameworks/av" -b lineage-18.1 2>/dev/null || \
+    git clone --depth=1 https://android.googlesource.com/platform/frameworks/av \
+      "$ANDROID_ROOT/frameworks/av" -b android-11.0.0_r48 2>/dev/null || true
+  fi
+
+  # system/media
+  if [ ! -d "$ANDROID_ROOT/system/media/audio/include" ]; then
+    echo "Cloning system/media..."
+    git clone --depth=1 https://github.com/LineageOS/android_system_media.git \
+      "$ANDROID_ROOT/system/media" -b lineage-18.1 2>/dev/null || \
+    git clone --depth=1 https://android.googlesource.com/platform/system/media \
+      "$ANDROID_ROOT/system/media" -b android-11.0.0_r48 2>/dev/null || true
+  fi
+  
+  # bionic (headers only)
+  if [ ! -d "$ANDROID_ROOT/bionic/libc/include" ]; then
+    echo "Cloning bionic..."
+    git clone --depth=1 https://github.com/LineageOS/android_bionic.git \
+      "$ANDROID_ROOT/bionic" -b lineage-18.1 2>/dev/null || \
+    git clone --depth=1 https://android.googlesource.com/platform/bionic \
+      "$ANDROID_ROOT/bionic" -b android-11.0.0_r48 2>/dev/null || true
+  fi
+
+  # external/safe-iop
+  if [ ! -d "$ANDROID_ROOT/external/safe-iop" ]; then
+    echo "Cloning external/safe-iop..."
+    mkdir -p "$ANDROID_ROOT/external"
+    git clone --depth=1 https://android.googlesource.com/platform/external/safe-iop \
+      "$ANDROID_ROOT/external/safe-iop" -b android-11.0.0_r48 2>/dev/null || true
+  fi
+
+  # hardware/interfaces
+  if [ ! -d "$ANDROID_ROOT/hardware/interfaces" ]; then
+    echo "Cloning hardware/interfaces..."
+    git clone --depth=1 https://github.com/LineageOS/android_hardware_interfaces.git \
+      "$ANDROID_ROOT/hardware/interfaces" -b lineage-18.1 2>/dev/null || \
+    git clone --depth=1 https://android.googlesource.com/platform/hardware/interfaces \
+      "$ANDROID_ROOT/hardware/interfaces" -b android-11.0.0_r48 2>/dev/null || true
+  fi
+
+  # system/libhidl
+  if [ ! -d "$ANDROID_ROOT/system/libhidl" ]; then
+    echo "Cloning system/libhidl..."
+    git clone --depth=1 https://github.com/LineageOS/android_system_libhidl.git \
+      "$ANDROID_ROOT/system/libhidl" -b lineage-18.1 2>/dev/null || \
+    git clone --depth=1 https://android.googlesource.com/platform/system/libhidl \
+      "$ANDROID_ROOT/system/libhidl" -b android-11.0.0_r48 2>/dev/null || true
+  fi
+
+  echo "=== Android source headers fetched ==="
+fi
+
+# Verify critical header exists
+if [ ! -d "$ANDROID_ROOT/hardware/libhardware/include/hardware" ]; then
+  echo "WARNING: hardware/libhardware/include/hardware still missing after fetch attempts"
+  echo "Listing hardware directory:"
+  ls -la "$ANDROID_ROOT/hardware/" 2>/dev/null || echo "hardware/ does not exist"
+fi
+
 # Create generated_android_filesystem_config.h - FULLY SELF-CONTAINED
 cat > "$ANDROID_ROOT/generated_android_filesystem_config.h" << 'EOF'
 #pragma once
