@@ -311,6 +311,13 @@ ro.product.model=Mi 9T Pro
 ro.hardware=qcom
 PROP
 
+# Device-specific .rc files (rsynced from root/ into installroot, picked up by detritus)
+touch "$DEVICE_OUT/root/init.recovery.qcom.rc"
+cat > "$DEVICE_OUT/root/ueventd.qcom.rc" << 'UEVENTD'
+# Qualcomm ueventd rules stub
+/dev/diag                 0660   system     oem_2901
+UEVENTD
+
 # Dummy init.rc files
 touch "$DEVICE_OUT/system/etc/init/servicemanager.rc"
 touch "$DEVICE_OUT/system/etc/init/hw/init.rc"
