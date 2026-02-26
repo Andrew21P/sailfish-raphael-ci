@@ -68,9 +68,25 @@ jobs:
             ${{ env.ANDROID_ROOT }}/out/target/product/${{ env.DEVICE }}/
             ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/bionic/
             ${{ env.ANDROID_ROOT }}/out/soong/.intermediates/art/build/
+            # Android source headers needed by DHD extract-headers.sh
+            ${{ env.ANDROID_ROOT }}/hardware/libhardware/
+            ${{ env.ANDROID_ROOT }}/hardware/interfaces/
             ${{ env.ANDROID_ROOT }}/system/core/
             ${{ env.ANDROID_ROOT }}/system/libbase/
             ${{ env.ANDROID_ROOT }}/system/tools/
+            ${{ env.ANDROID_ROOT }}/system/media/
+            ${{ env.ANDROID_ROOT }}/system/libhidl/
+            ${{ env.ANDROID_ROOT }}/system/hardware/interfaces/
+            ${{ env.ANDROID_ROOT }}/frameworks/native/
+            ${{ env.ANDROID_ROOT }}/frameworks/av/
+            ${{ env.ANDROID_ROOT }}/frameworks/hardware/interfaces/
+            ${{ env.ANDROID_ROOT }}/bionic/libc/
+            ${{ env.ANDROID_ROOT }}/bionic/libm/
+            ${{ env.ANDROID_ROOT }}/bionic/libdl/
+            ${{ env.ANDROID_ROOT }}/bionic/linker/
+            ${{ env.ANDROID_ROOT }}/external/safe-iop/
+            ${{ env.ANDROID_ROOT }}/external/libcxx/
+            ${{ env.ANDROID_ROOT }}/external/libcxxabi/
             ${{ env.ANDROID_ROOT }}/build/make/
             ${{ env.ANDROID_ROOT }}/build/core/
             ${{ env.ANDROID_ROOT }}/build/soong/
