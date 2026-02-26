@@ -299,6 +299,18 @@ chmod +x "$DEVICE_OUT/hybris-updater-unpack.sh"
 echo '#!/bin/sh' > "$DEVICE_OUT/system/bin/init"
 chmod +x "$DEVICE_OUT/system/bin/init"
 
+# Dummy root directory files (rsync'd into installroot by the spec)
+mkdir -p "$DEVICE_OUT/root"
+# default.prop is required for android_version_major < 13
+cat > "$DEVICE_OUT/root/default.prop" << 'PROP'
+ro.build.display.id=OQ1A.190711.020
+ro.build.version.sdk=30
+ro.build.version.release=11
+ro.product.device=raphael
+ro.product.model=Mi 9T Pro
+ro.hardware=qcom
+PROP
+
 # Dummy init.rc files
 touch "$DEVICE_OUT/system/etc/init/servicemanager.rc"
 touch "$DEVICE_OUT/system/etc/init/hw/init.rc"
