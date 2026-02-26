@@ -332,8 +332,9 @@ echo "4.14.180-perf-g9999999" > "$KERNEL_OBJ/include/config/kernel.release"
 
 # Also create in alternative paths DHD might look for
 mkdir -p "$DEVICE_OUT/obj/PACKAGING/kernel_headers_intermediates/include/linux"
+mkdir -p "$DEVICE_OUT/obj/PACKAGING/kernel_headers_intermediates/include/config"
 cp "$KERNEL_OBJ/.config" "$DEVICE_OUT/obj/PACKAGING/kernel_headers_intermediates/.config"
-echo "4.14.180-perf-g9999999" > "$DEVICE_OUT/obj/PACKAGING/kernel_headers_intermediates/include/config/kernel.release" 2>/dev/null || true
+echo "4.14.180-perf-g9999999" > "$DEVICE_OUT/obj/PACKAGING/kernel_headers_intermediates/include/config/kernel.release"
 
 # Copy droid-hal-raphael
 mkdir -p $ANDROID_ROOT/rpm
