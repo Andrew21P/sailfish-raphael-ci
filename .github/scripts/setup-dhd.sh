@@ -312,6 +312,9 @@ gzip -n < /dev/null > "$DEVICE_OUT/obj/ROOT/hybris-boot_intermediates/boot-initr
 # Dummy kernel
 touch "$DEVICE_OUT/kernel"
 
+# Dummy hybris-recovery.img (not all devices produce one)
+touch "$DEVICE_OUT/hybris-recovery.img"
+
 # Create kernel build output stubs (needed by DHD spec)
 KERNEL_OBJ="$DEVICE_OUT/obj/KERNEL_OBJ"
 mkdir -p "$KERNEL_OBJ/include/config"
