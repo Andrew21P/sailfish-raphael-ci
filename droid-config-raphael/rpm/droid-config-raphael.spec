@@ -12,8 +12,9 @@
 # hybris-18.1 / Android 11
 %define android_version_major 11
 
-# We provide our own board mapping via sparse
-%define provides_own_board_mapping 1
+# Required by droid-configs.inc board mapping sed (even though template
+# does not use %OTHERDEVICE%, RPM still expands the macro)
+%define otherdevice %{device}
 
 # droid-configs.inc contains all package definitions, build, install, files
 %include droid-configs-device/droid-configs.inc
