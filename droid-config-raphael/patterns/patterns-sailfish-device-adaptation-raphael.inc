@@ -15,14 +15,16 @@ Requires: libhybris-libwayland-egl
 Recommends: libhybris-tests
 
 # Bluetooth - use bluebinder for hybris-18.1
-Requires: bluebinder
+# NOTE: Disabled - needs local buildmw, will add in future iteration
+#Requires: bluebinder
 
 # Telephony - RIL binder for Android 11
 Requires: ofono-ril-binder-plugin
 Requires: dummy_netd
 
 # NFC - binder plugin
-Requires: nfcd-binder-plugin
+# NOTE: Disabled - needs local buildmw, will add in future iteration
+#Requires: nfcd-binder-plugin
 
 # Sensors
 Requires: hybris-libsensorfw-qt5
@@ -46,11 +48,14 @@ Requires: qt5-qpa-hwcomposer-plugin
 Requires: qtscenegraph-adaptation
 
 # Camera/Video - gstreamer droid
-Requires: gstreamer1.0-droid
-Requires: gmp-droid
+# NOTE: Disabled - requires external/droidmedia from Android source tree
+# which is not available in CI HAL artifacts. Camera/video won't work.
+#Requires: gstreamer1.0-droid
+#Requires: gmp-droid
 
 # Dummy audioflinger for camera
-Requires: audiosystem-passthrough-dummy-af
+# NOTE: Disabled - may not be in standard repos without community-adaptation
+#Requires: audiosystem-passthrough-dummy-af
 
 # LED notifications
 Requires: mce-plugin-libhybris
@@ -71,17 +76,20 @@ Requires: jolla-devicelock-daemon-encsfa
 #Requires: droid-biometry-fp
 
 # GPS
-Requires: geoclue-provider-hybris
+# NOTE: Disabled - needs binder variant buildmw for Android 11
+#Requires: geoclue-provider-hybris
 
 # FM Radio (Qualcomm)
-Requires: qt5-qtmultimedia-plugin-mediaservice-irisradio
-Requires: jolla-mediaplayer-radio
+# NOTE: Disabled - irisradio plugin may not be in standard repos
+#Requires: qt5-qtmultimedia-plugin-mediaservice-irisradio
+#Requires: jolla-mediaplayer-radio
 
 # Flashlight
 Requires: jolla-settings-system-flashlight
 
 # Wi-Fi suspend on Qualcomm
-Requires: sailfish-connman-plugin-suspend
+# NOTE: Disabled - needs local buildmw, will add in future iteration
+#Requires: sailfish-connman-plugin-suspend
 
 %description -n patterns-sailfish-device-adaptation-raphael
 Pattern with packages for raphael (Xiaomi Mi 9T Pro) HW Adaptation

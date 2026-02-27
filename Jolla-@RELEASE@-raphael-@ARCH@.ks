@@ -6,8 +6,8 @@ keyboard us
 timezone --utc UTC
 
 ### Repositories
+repo --name=adaptation0-raphael-@RELEASE@ --baseurl=file://@REPO@
 repo --name=adaptation-community-common-raphael-@RELEASE@ --baseurl=https://repo.sailfishos.org/obs/nemo:/devel:/hw:/common/sailfish_latest_@ARCH@/
-repo --name=adaptation-community-raphael-@RELEASE@ --baseurl=file://@REPO@
 repo --name=apps-@RELEASE@ --baseurl=https://releases.jolla.com/jolla-apps/@RELEASE@/@ARCH@/
 repo --name=hotfixes-@RELEASE@ --baseurl=https://releases.jolla.com/releases/@RELEASE@/hotfixes/@ARCH@/
 repo --name=jolla-@RELEASE@ --baseurl=https://releases.jolla.com/releases/@RELEASE@/jolla/@ARCH@/

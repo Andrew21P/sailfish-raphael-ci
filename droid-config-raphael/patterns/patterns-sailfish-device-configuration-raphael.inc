@@ -48,7 +48,8 @@ Requires: jolla-calendar
 
 # NFC settings
 Requires: jolla-settings-system-nfc
-Requires: nfcd-binder-plugin
+# NOTE: Disabled - nfcd-binder-plugin needs local buildmw
+#Requires: nfcd-binder-plugin
 Requires: nfcd-mce-plugin
 
 # Screen resolution icons (1.5x for 1080p AMOLED)
