@@ -362,6 +362,32 @@ if [ "$BUILDGG" = "1" ]; then
 fi
 
 if [ "$BUILDVERSION" = "1" ]; then
+    # Install all locally-built packages into target to satisfy BuildRequires
+    # of droid-hal-version (needs droid-hal, droid-config, MW packages, etc.)
+    minfo "Installing local repo packages into target for droid-hal-version build..."
+    createrepo_c "$LOCAL_REPO" || minfo "createrepo_c not available, trying createrepo"
+    sdk-assistant maintain $VENDOR-$DEVICE-$PORT_ARCH zypper ar -G -f file://$LOCAL_REPO local-repo 2>/dev/null || true
+    sdk-assistant maintain $VENDOR-$DEVICE-$PORT_ARCH zypper ref local-repo 2>/dev/null || true
+    sdk-assistant maintain $VENDOR-$DEVICE-$PORT_ARCH zypper -n install --allow-unsigned-rpm --force-resolution \
+        droid-hal-$DEVICE \
+        droid-hal-$DEVICE-devel \
+        droid-config-$DEVICE \
+        droid-config-$DEVICE-sailfish \
+        droid-config-$DEVICE-preinit-plugin \
+        droid-config-$DEVICE-pulseaudio-settings \
+        droid-config-$DEVICE-policy-settings \
+        droid-hal-$DEVICE-kernel \
+        droid-hal-$DEVICE-kernel-modules \
+        pulseaudio-modules-droid \
+        qt5-qpa-hwcomposer-plugin \
+        mce-plugin-libhybris \
+        2>>$LOG || minfo "Some packages may not have installed (non-fatal)"
+    # Also try packages from remote repos
+    sdk-assistant maintain $VENDOR-$DEVICE-$PORT_ARCH zypper -n install --force-resolution \
+        hybris-libsensorfw-qt5 \
+        qtscenegraph-adaptation \
+        libhybris \
+        2>>$LOG || minfo "Some remote packages may not have installed (non-fatal)"
     buildversion
     echo "----------------------DONE! Now proceed on creating the rootfs------------------"
 fi

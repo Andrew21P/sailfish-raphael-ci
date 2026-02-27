@@ -38,7 +38,7 @@ sed -i "s/kernel_release=.*/kernel_release='4.14.180-perf'/" rpm/dhd/droid-hal-d
 sed -i "s/sort -u.*kernel\.release.*/echo '4.14.180-perf'/" rpm/dhd/droid-hal-device.inc || true
 
 sb2 -t $VENDOR-$DEVICE-$PORT_ARCH -m sdk-install -R zypper in -y ccache python
-sudo zypper in -y python
+sudo zypper in -y python createrepo_c
 
 # dhd hack - use custom helpers
 cd $ANDROID_ROOT
