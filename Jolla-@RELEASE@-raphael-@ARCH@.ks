@@ -14,7 +14,7 @@ repo --name=jolla-@RELEASE@ --baseurl=https://releases.jolla.com/releases/@RELEA
 
 ### Packages
 %packages
-@Jolla Configuration raphael
+patterns-sailfish-device-configuration-raphael
 
 ### For debug, add these
 jolla-developer-mode
