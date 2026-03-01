@@ -25,7 +25,6 @@ openssh-server
 openssh-clients
 zypper
 mce-tools
-libgbinder-tools
 unzip
 
 %end
