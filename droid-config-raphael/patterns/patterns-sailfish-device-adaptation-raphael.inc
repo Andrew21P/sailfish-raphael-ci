@@ -20,7 +20,8 @@ Recommends: libhybris-tests
 
 # Telephony - RIL binder for Android 11
 Requires: ofono-ril-binder-plugin
-Requires: dummy_netd
+# NOTE: Disabled - dummy_netd not in standard repos, needs local buildmw
+#Requires: dummy_netd
 
 # NFC - binder plugin
 # NOTE: Disabled - needs local buildmw, will add in future iteration
