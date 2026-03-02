@@ -27,8 +27,8 @@ Requires: ofono-ril-binder-plugin
 # NOTE: Disabled - needs local buildmw, will add in future iteration
 #Requires: nfcd-binder-plugin
 
-# Sensors
-Requires: hybris-libsensorfw-qt5
+# Sensors - use concrete package name (hybris-libsensorfw-qt5 is a virtual capability)
+Requires: hybris-libsensorfw-qt5-binder
 
 # Vibra
 Requires: ngfd-plugin-native-vibrator
