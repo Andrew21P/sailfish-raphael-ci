@@ -18,8 +18,9 @@ Recommends: libhybris-tests
 # NOTE: Disabled - needs local buildmw, will add in future iteration
 #Requires: bluebinder
 
-# Telephony - RIL binder for Android 11
-Requires: ofono-ril-binder-plugin
+# Telephony - binder plugin for Android 11
+# ofono-ril-binder-plugin is a virtual capability provided by ofono-binder-plugin
+Requires: ofono-binder-plugin
 # NOTE: Disabled - dummy_netd not in standard repos, needs local buildmw
 #Requires: dummy_netd
 
